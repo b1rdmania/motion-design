@@ -40,13 +40,22 @@ Compare mandatory commitments with the actual frames. Cut/onset/silence detector
 
 A readable hold can contain camera travel, grain or secondary action. A pixel-difference still-run metric cannot verify readability and does not block delivery. A match cut may be a hard edit: inspect both the edit and its visual relationship.
 
+## Beat review
+
+`beat.review` is one blocking finding per beat, listing everything only eyes can settle there:
+- the text cues and their planned timing
+- the mandatory commitments
+- the claims, including what the images imply about the viewer and their people (for example, a rota whose regulars are replaced by strangers implies Common replaces them).
+
+Inspect the beat, then settle it with one resolution that addresses every item. If any item fails, mark it fail and name the item.
+
 ## Embedded footage
 
 `fidelity.footage` compares three frames of each footage beat with its source at the declared in point and crop. A mismatch is `needs_review`: check sync, crop and colour. Honest before/after films depend on it.
 
 ## Does it land (judged)
 
-- `judged.cold_viewer` (animatic and final): a fresh reader who sees only the frames (a subagent when available) says who the film is for, what it is, what to do next, and the moment they remember. Compare the answers with the treatment's intake. In testing, a blind judge preferred a plainer film that named its viewer in the first second over a better-designed one that did not.
+- `judged.cold_viewer` (animatic and final): check each concrete claim a cold reader makes against the frames before acting on it; cold readers also misread. A fresh reader who sees only the frames (a subagent when available) says who the film is for, what it is, what to do next, and the moment they remember. Compare the answers with the treatment's intake. In testing, a blind judge preferred a plainer film that named its viewer in the first second over a better-designed one that did not.
 - `judged.story` (final): watching as the viewer would, does the telling chosen in step 3 come through?
 - `judged.reel_bar` (style frames and final): would this go first in a senior motion designer's showreel? Name what holds it back. "Competent" is a fail of the bar, not a pass.
 - `judged.frame`, `judged.reskin`, `judged.transition`, `judged.pacing`: the craft questions per beat.

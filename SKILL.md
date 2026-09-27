@@ -159,7 +159,7 @@ Pass `--audiomap` for a music-led film (`python3 SKILL_DIR/scripts/beatmap.py tr
    - What should I do next?
    - What was the one moment you remember?
 
-   If you cannot start one, answer those questions strictly from the frames, as if you had never seen the plan. A film that is well made but unclear fails this: a blind judge preferred a plainer film that said who it was for in its first second.
+   Check its concrete claims against the frames before acting on them; cold readers misread too. If you cannot start one, answer those questions strictly from the frames, as if you had never seen the plan. A film that is well made but unclear fails this: a blind judge preferred a plainer film that said who it was for in its first second.
 3. **Settle each `needs_review` finding** with `scripts/resolve.py`, saying what you inspected. If you cannot tell (for example, you cannot listen), leave it open.
 4. **Record accepted limits** with `resolve.py --accept-limit "..."`, so they reach the delivery note.
 5. **Fix and re-render.** Blocking problems come first. Then, if `judged.reel_bar` fails, spend a revision round lifting the film towards the bar, usually the signature moment, before accepting it. Name what holds it back; do not just record it.

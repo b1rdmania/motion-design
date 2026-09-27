@@ -37,6 +37,7 @@ REF = {
     "default": "references/defaults.md",
     "judged": "references/review.md#judged",
     "plan": "references/score.md",
+    "beat": "references/review.md#beat-review",
 }
 
 DIGITS = re.compile(r"\d|%|\bper ?cent\b", re.I)
@@ -177,20 +178,6 @@ def communication(r: Review, stage: str, sheet: str | None):
                            + ". Checks the plan's timing, not the rendered text.",
                   fix=None if status == "pass" else
                   f"hold at least {chars / threshold:.2f}s, cut words, or set delivery.max_text_cps with a reason")
-        cues = [c for c in text_cues(b) if c.get("text")]
-        if cues:
-            listing = "; ".join(f"'{c['text']}' from {b['start'] + float(c.get('start', 0)):.2f}s for "
-                                f"{float(c.get('hold', 0)):.2f}s" for c in cues)
-            if stage == "style_frames":
-                r.add("communication.legible_at_view", "needs_review", True, beat=b["id"], t=b["start"],
-                      method="inspection", evidence=f"{listing}; see {sheet}",
-                      fix="inspect the still at intended viewing width, not a scaled-down sheet")
-            else:
-                r.add("communication.rendered_text", "needs_review", True, beat=b["id"], t=b["start"],
-                      method="inspection", evidence=listing,
-                      fix="in the video: each cue appears when planned, holds long enough to read, "
-                          "and is legible at viewing width")
-
     if any(v for _, _, v in supers) and stage != "style_frames":
         r.add("communication.speech", "needs_review", True,
               evidence="speech intelligibility is not measured by script",
@@ -223,9 +210,6 @@ def evidence(r: Review, ledger: dict, stage: str = "final"):
                     r.add("evidence.claim_exists", "fail", True, beat=b["id"], t=b["start"],
                           evidence=f"beat proves '{i}', which is not in evidence.json", fix="add the claim or remove it")
             continue
-        r.add("evidence.coverage", "needs_review", True, beat=b["id"], t=b["start"], method="inspection",
-              evidence=f"planned text/VO: {sup} {vo}; visual job: {b.get('job', '')}",
-              fix="compare rendered words, speech and implied claims with the ledger; record when no claims apply")
         words = f"{sup} {vo}".strip()
         pid = b.get("proves")
         ids = pid if isinstance(pid, list) else ([pid] if pid else [])
@@ -307,6 +291,16 @@ def sound(r: Review, audio: dict, delivery: dict, events: list[dict], stage: str
             r.add("sound.unplanned_gap", "needs_review", True, t=s["start"], beat=beat_at(r.score, s["start"]),
                   evidence=f"silence {s['start']}–{s['end']}s is not in score.events",
                   fix="declare it as a silence event, or fix the gap in the audio assembly")
+    curve = [c for c in audio.get("loudness_curve", []) if c.get("momentary") is not None]
+    if curve and stage != "style_frames":
+        spans = []
+        for k in range(0, int(curve[-1]["t"]) + 1, 5):
+            vals = [c["momentary"] for c in curve if k <= c["t"] < k + 5 and c["momentary"] > -70]
+            spans.append(f"{k}–{k + 5}s: {max(vals):.1f}" if vals else f"{k}–{k + 5}s: silent")
+        r.add("sound.shape", "needs_review", False, method="measurement",
+              evidence="loudest momentary LUFS per 5 s: " + "; ".join(spans),
+              fix="compare with the sound plan: rises only where planned, beds steady, silences where planned. "
+                  "Claims about the mix must come from this curve (audio.json loudness_curve), not from the stems.")
     if stage != "style_frames":
         r.add("sound.repeats", "needs_review", True,
               evidence="repeated or doubled audio is not measured by script",
@@ -367,13 +361,34 @@ def fidelity(r: Review, strip: dict, audio: dict, events: list[dict], stage: str
               fix=None if best >= 0.8 * hold else "holds with drift or grain read as motion; check the frames")
 
 
-def commitments(r: Review, stage: str):
-    if stage not in ("style_frames", "final"):
-        return
+def beat_review(r: Review, stage: str, sheet: str | None):
+    """One inspection finding per beat, listing everything only eyes can settle there:
+    rendered text, mandatory commitments and claims. One finding per beat keeps the
+    review readable; per-item findings ran to 50–90 per stage in testing and invited
+    rubber-stamping."""
     for b in r.score.get("beats", []):
-        for c in b.get("commitments", []):
-            r.add("fidelity.commitment", "needs_review", True, beat=b["id"], t=b["start"],
-                  method="inspection", evidence=f"mandatory: {c}", fix="confirm it is present and exact in the frame")
+        items = []
+        cues = [c for c in text_cues(b) if c.get("text")]
+        if cues:
+            listing = "; ".join(f"'{c['text']}' from {b['start'] + float(c.get('start', 0)):.2f}s for "
+                                f"{float(c.get('hold', 0)):.2f}s" for c in cues)
+            items.append(("Text legible at viewing width on the still: " if stage == "style_frames" else
+                          "Text appears when planned, holds long enough to read, and is legible at viewing width: ")
+                         + listing)
+        if stage != "animatic":
+            for c in b.get("commitments", []):
+                items.append(f"Mandatory, present and exact: {c}")
+            pid = b.get("proves")
+            ids = pid if isinstance(pid, list) else ([pid] if pid else [])
+            items.append("Claims: the rendered words, speech and images (including what they imply about the "
+                         "viewer and their people) are supported by the ledger"
+                         + (f" (claims {', '.join(ids)})" if ids else " (no claims planned)")
+                         + f"; the beat's job: {b.get('job', '—')}")
+        if not items:
+            continue
+        r.add("beat.review", "needs_review", True, beat=b["id"], t=b["start"], method="inspection",
+              evidence=" | ".join(f"{i + 1}) {x}" for i, x in enumerate(items)) + (f" | see {sheet}" if sheet else ""),
+              fix="Inspect the beat and settle every item in one resolution. If any item fails, mark fail and name it.")
 
 
 def frame_alignment(r: Review):
@@ -594,7 +609,7 @@ def main() -> None:
     frame_alignment(r)
     communication(r, a.stage, sheet)
     evidence(r, ledger, a.stage)
-    commitments(r, a.stage)
+    beat_review(r, a.stage, sheet)
     defaults(r, load_json(a.audiomap) if a.audiomap else None, events)
     judged(r, a.stage, sheet, strip_png)
 

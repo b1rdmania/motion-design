@@ -78,6 +78,21 @@ Each adapter retains an explicit fixture status. The FFmpeg-generated timing fix
 - less review volume (batch and carry-over)
 - the HyperFrames workflow choice and first-frame warning.
 
+**Test 2b (27 September 2026).** The same Common setup, re-run with those fixes (fresh agents, new client instance). This time:
+- The stakes question surfaced the real bottleneck: organisers stretched, burned by no-shows, and wary of platforms.
+- The concept came straight from it: the organiser's paper rota ("Six needed. Two maybe.") becomes Common on the same clipboard, with "Oh good. Another platform." in their own hand.
+- The signature moment was planned and built: a pencil strikes out "maybe?" and the row snaps to "Tom · Confirmed".
+- The cold read got audience, product and next step right, and drove two fixes.
+
+A second blind judge preferred the skill film **clearly**, 34 to 28 against the same baseline: better on brand fit, readability and craft, slightly worse on comprehension (7 against 8). Neither film reached the showreel bar. Judges vary: the two judges scored the same baseline 33 and 28, and there was one run per arm.
+
+The client also caught the director claiming sound properties it had not measured. Fixes that followed:
+- one `beat.review` finding per beat (review volume had run to 50–90 items per stage)
+- a loudness curve with `sound.shape`, and a rule to measure claims on the final mix
+- checking a cold reader's claims against the frames
+- using the product's own UI wording
+- a lighter HyperFrames handoff.
+
 
 1. Preserve the first real test run and report where the skill helps or obstructs it.
 2. Produce the same brief with and without the skill, using the same model, assets and comparable effort. Keep the baseline honest. Evaluate comprehension, brand fit, readability and preference with a reviewer who does not know which is which; automated craft metrics alone cannot establish improvement.
