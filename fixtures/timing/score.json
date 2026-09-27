@@ -1,0 +1,81 @@
+{
+  "title": "Timing fixture",
+  "lead": "visual",
+  "fps": 24,
+  "duration": 5.0,
+  "delivery": {
+    "formats": [
+      {
+        "name": "landscape",
+        "width": 640,
+        "height": 360
+      }
+    ],
+    "loudness_lufs": -14,
+    "true_peak_dbtp": -1,
+    "audio": true
+  },
+  "music": {
+    "track": "sine 440 Hz test tone",
+    "provenance": "generated"
+  },
+  "beats": [
+    {
+      "id": "b1",
+      "start": 0.0,
+      "dur": 1.5,
+      "job": "first plate",
+      "focal": "plate",
+      "motion": {
+        "build": 0,
+        "hold": 1.5
+      },
+      "transition_in": "cut"
+    },
+    {
+      "id": "b2",
+      "start": 1.5,
+      "dur": 2.0,
+      "job": "second plate",
+      "focal": "plate",
+      "motion": {
+        "build": 0,
+        "hold": 2.0
+      },
+      "transition_in": "cut"
+    },
+    {
+      "id": "b3",
+      "start": 3.5,
+      "dur": 1.5,
+      "job": "third plate",
+      "focal": "plate",
+      "motion": {
+        "build": 0,
+        "hold": 1.5
+      },
+      "transition_in": "cut"
+    }
+  ],
+  "events": [
+    {
+      "type": "cut",
+      "t": 1.5
+    },
+    {
+      "type": "cut",
+      "t": 3.5
+    },
+    {
+      "type": "silence",
+      "t": 2.5,
+      "dur": 0.5
+    }
+  ],
+  "overrides": [
+    {
+      "rule": "default.pace_varies",
+      "reason": "test fixture; even beats are the point"
+    }
+  ]
+}
