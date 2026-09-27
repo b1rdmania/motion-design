@@ -68,6 +68,16 @@ Each adapter retains an explicit fixture status. The FFmpeg-generated timing fix
 
 **Test 1 (27 September 2026).** Tidewater sting, same brief, assets and model; the renderer was fixed to HyperFrames by the test brief. The skill run had a stronger idea and better phone legibility. The baseline had more motion craft, and Andy judged it much better overall. Cause: the skill agent hand-built the film to avoid the workflow's planning and lost HyperFrames' motion craft. It also tested autonomous execution, not collaborative discovery.
 
+**Test 2 (27 September 2026).** Common, a real public repo, with an unresolved story and a simulated founder answering through files. No renderer was fixed, and both arms could ask questions. Both clients steered the film to organisers; the skill arm got there through its intake questions, the baseline through the client's pushback. Neither arm asked the stakes question, so the real bottleneck never surfaced. Both chose HyperFrames, with no Blender ("flat 2D brand"). A blind judge scored both 33/50 and clearly preferred the baseline for comprehension: it named its viewer in the first second and said what Common is by 0:08. The skill film was better designed but opened on an abstract hook and named the product at 0:22. Neither reached the showreel bar. Fixes that followed:
+- the stakes question is now required
+- a signature moment in every treatment
+- a revision round spent on the bar when it fails
+- a cold-viewer check by a fresh agent
+- clarity-before-cleverness guidance
+- frame-exact sampling
+- less review volume (batch and carry-over)
+- the HyperFrames workflow choice and first-frame warning.
+
 
 1. Preserve the first real test run and report where the skill helps or obstructs it.
 2. Produce the same brief with and without the skill, using the same model, assets and comparable effort. Keep the baseline honest. Evaluate comprehension, brand fit, readability and preference with a reviewer who does not know which is which; automated craft metrics alone cannot establish improvement.

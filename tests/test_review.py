@@ -228,3 +228,45 @@ def test_bass_entry_is_detected_in_low_band():
     x[int(sr * 2):] += 0.3 * np.sin(2 * np.pi * 55 * t[int(sr * 2):])
     res = audio_check.analyse(np.stack([x, x], axis=1).astype(np.float32), -50, 0.25)
     assert any(abs(o - 2.0) < 0.05 for o in res["low_onsets"])
+
+
+# ---- fixes from test 2 ----
+
+def test_cue_ending_on_last_frame_does_not_crash(ref, tmp_path):
+    plan = copy_plan(tmp_path)
+    score = json.loads((plan / "score.json").read_text())
+    score["beats"][2]["text_cues"] = [{"text": "end card", "start": 0.0, "hold": 1.5}]
+    (plan / "score.json").write_text(json.dumps(score))
+    crit = review(plan, ref, tmp_path / "r")
+    samples = json.loads((tmp_path / "r" / "frames" / "frames.json").read_text())["samples"]
+    assert max(s["frame"] for s in samples) <= 5 * 24 - 1
+    assert all(Path(s["path"]).exists() for s in samples)
+    assert crit["findings"]
+
+
+def test_animatic_skips_content_review_but_keeps_ledger_errors(ref, tmp_path):
+    plan = copy_plan(tmp_path)
+    score = json.loads((plan / "score.json").read_text())
+    score["beats"][0]["proves"] = "missing"
+    (plan / "score.json").write_text(json.dumps(score))
+    crit = review(plan, ref, tmp_path / "r", stage="animatic")
+    assert by_rule(crit, "evidence.claim_exists")[0]["status"] == "fail"
+    assert not by_rule(crit, "evidence.coverage")
+
+
+def test_resolve_by_rule_and_carry_over(ref, tmp_path):
+    first, second = tmp_path / "r1", tmp_path / "r2"
+    review(FIXTURE, ref, first)
+    review(FIXTURE, ref, second)
+    resolve = [sys.executable, str(SCRIPTS / "resolve.py")]
+    subprocess.run(resolve + ["--critique", str(first / "critique.json"), "--rule", "evidence.coverage",
+                              "--status", "pass", "--method", "frame inspection",
+                              "--evidence", "no claims in plain plates"], check=True, capture_output=True)
+    crit = json.loads((first / "critique.json").read_text())
+    assert all(f.get("resolution") for f in by_rule(crit, "evidence.coverage"))
+    subprocess.run(resolve + ["--critique", str(second / "critique.json"), "--carry-from", str(first / "critique.json")],
+                   check=True, capture_output=True)
+    crit2 = json.loads((second / "critique.json").read_text())
+    carried = by_rule(crit2, "evidence.coverage")
+    assert carried and all("carried from" in f["resolution"]["method"] for f in carried)
+    assert not any(f.get("resolution") for f in crit2["findings"] if not f["rule"].startswith("evidence."))

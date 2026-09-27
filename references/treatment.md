@@ -38,6 +38,9 @@ Chosen: <n>, because <one line tied to the audience's stakes>
 ## Craft
 <what will make this showreel quality: the light, material, type, camera or sound decisions that lift it above a template>
 
+## Signature moment
+<the one shot someone would screenshot or cut into a reel: beat, what happens, and why it belongs to this film and no other>
+
 ## Motion vocabulary
 - <Verb>: <what it means in this film>
 
@@ -84,6 +87,8 @@ The first idea is usually the category average. Buck dropped the obvious magic i
 **References.** References are how a director proves taste. Name the work and the specific thing to take: "Linear, 'Introducing Linear for Agents': no VO, cut rhythm carries the argument". Also say what to leave. A reference is not permission to imitate an unrelated brand. Do not cite a work you have not seen.
 
 **Craft.** Name the decisions that will make it reel-worthy: "a single slow dolly through real fog in Blender, type composited razor-sharp over it". Adjectives ("premium", "sleek") do not count.
+
+**Signature moment.** Showreel films are remembered for one shot: a match cut, a reveal, a camera move, a piece of type doing something only this film could do. Plan it, give it the most craft time, and make it a style frame. It should come from the story, not decorate it.
 
 **Motion vocabulary.** A few verbs keep motion meaningful and consistent:
 - Inspect: a slow, purposeful camera move that reveals where we are.

@@ -12,7 +12,7 @@ No music bed, narration, sound effect, paid provider or API key is required. Use
 
 ## Editorial choices
 
-Choose music by phrase structure, energy, instrumentation, relevance and ending. Generated music often ignores its prompt: tracks come back the wrong length, stop pulsing early or go silent. Analyse every generated track before timing anything to it, and record the prompt. Tempo alone does not establish mood or quality; no genre is inherently inappropriate. Map beats only when useful. Deliberate silence, ambience, fades and an abrupt expressive stop are valid choices. Avoid unintended clicks, clipped tails, duplication or gaps.
+Choose music by phrase structure, energy, instrumentation, relevance and ending. Generated sound effects often come back very quiet (−35 dBFS peaks are common) or with the event hundreds of milliseconds in: measure each effect's level and onset, trim and normalise it before placing it. Generated music often ignores its prompt: tracks come back the wrong length, stop pulsing early or go silent. Analyse every generated track before timing anything to it, and record the prompt. Tempo alone does not establish mood or quality; no genre is inherently inappropriate. Map beats only when useful. Deliberate silence, ambience, fades and an abrupt expressive stop are valid choices. Avoid unintended clicks, clipped tails, duplication or gaps.
 
 Distinguish **silence** (the whole mix falls below a declared analysis threshold) from a **dropout** (for example, music stops while ambience continues). Do not declare a dropout as a measured silence. Set silence length and re-entry for the scene, not a fixed frame recipe.
 
@@ -37,14 +37,14 @@ This FFmpeg example ducks music under narration. Values are illustrative; use th
 ```sh
 film_duration=30
 ffmpeg -i music.wav -i vo.wav -filter_complex \
-  "[0:a]apad,atrim=duration=${film_duration}[music];[1:a]apad,atrim=duration=${film_duration},asplit=2[side][voice];[music][side]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=300[m];[m][voice]amix=inputs=2:normalize=0,apad,atrim=duration=${film_duration},loudnorm=I=-14:TP=-1:LRA=11[a]" \
+  "[0:a]apad,atrim=duration=${film_duration}[music];[1:a]apad,atrim=duration=${film_duration},asplit=2[side][voice];[music][side]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=300[m];[m][voice]amix=inputs=2:normalize=0,apad,atrim=duration=${film_duration},loudnorm=I=-14:TP=-1.5:LRA=11,alimiter=limit=0.89[a]" \
   -map '[a]' mix.wav
 ffmpeg -i picture.mp4 -i mix.wav -filter_complex \
   "[1:a]apad,atrim=duration=${film_duration}[a]" \
   -map 0:v -map '[a]' -c:v copy -c:a aac -b:a 192k final.mp4
 ```
 
-Verify that the picture itself has the planned duration. Do not use `-shortest` to hide a short audio stream. A deliberately silent export can omit the audio stream altogether.
+Single-pass `loudnorm` can let sharp transients (ticks, hits) overshoot; the limiter at the end catches them. For a precise target, measure first (`loudnorm=print_format=json`), then apply the measured values in a second pass. Verify that the picture itself has the planned duration. Do not use `-shortest` to hide a short audio stream. A deliberately silent export can omit the audio stream altogether.
 
 ## Integrity
 

@@ -46,6 +46,7 @@ A readable hold can contain camera travel, grain or secondary action. A pixel-di
 
 ## Does it land (judged)
 
+- `judged.cold_viewer` (animatic and final): a fresh reader who sees only the frames (a subagent when available) says who the film is for, what it is, what to do next, and the moment they remember. Compare the answers with the treatment's intake. In testing, a blind judge preferred a plainer film that named its viewer in the first second over a better-designed one that did not.
 - `judged.story` (final): watching as the viewer would, does the telling chosen in step 3 come through?
 - `judged.reel_bar` (style frames and final): would this go first in a senior motion designer's showreel? Name what holds it back. "Competent" is a fail of the bar, not a pass.
 - `judged.frame`, `judged.reskin`, `judged.transition`, `judged.pacing`: the craft questions per beat.

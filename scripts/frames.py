@@ -16,6 +16,7 @@ writes a sheet scaled to that width, for legibility at the intended viewing size
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -51,18 +52,34 @@ def sample_times(score: dict, stage: str, duration: float, extra: list[float]) -
             out.append({"beat": b["id"], "kind": "text-end", "t": max(cue_start, cue_end - one)})
     for t in extra:
         out.append({"beat": None, "kind": "flagged", "t": t})
+    last = max(int(round(duration * fps)) - 1, 0)
     for s in out:
-        s["t"] = round(min(max(s["t"], 0.0), max(duration - one, 0.0)), 3)
+        # Work in whole frames: a rounded time can land past the last frame, or on the next one.
+        # A frame shows its content from its own time onwards: round starts up and ends down.
+        x = s["t"] * fps
+        n = math.floor(x + 1e-6) if s["kind"].endswith("end") or s["kind"] == "transition-before" else math.ceil(x - 1e-6)
+        n = min(max(n, 0), last)
+        s["frame"] = n
+        s["t"] = round(n / fps, 3)
     return out
 
 
-def extract(video: Path, t: float, path: Path) -> None:
-    run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t:.3f}", "-i", str(video), "-frames:v", "1", str(path)])
+def extract(video: Path, t: float, path: Path, fps: float | None = None, frame: int | None = None) -> None:
+    """Extract one frame. With fps and frame, seek a quarter-frame early so the first
+    frame decoded is exactly frame N, not its neighbour."""
+    if fps and frame is not None:
+        t = max((frame - 0.25) / fps, 0.0)
+    run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t:.4f}", "-i", str(video), "-frames:v", "1", str(path)])
 
 
 def sheet(items: list[dict], path: Path, width: int | None, cols: int = 4) -> None:
     imgs = []
     for it in items:
+        if not Path(it["path"]).exists():
+            im = Image.new("RGB", (640, 360), (200, 60, 60))
+            ImageDraw.Draw(im).text((10, 10), f"missing: {Path(it['path']).name}", fill=(255, 255, 255))
+            imgs.append(im)
+            continue
         im = Image.open(it["path"]).convert("RGB")
         if width:
             im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
@@ -102,7 +119,7 @@ def main() -> None:
     a.out.mkdir(parents=True, exist_ok=True)
     for k, it in enumerate(items):
         p = a.out / f"{k:03d}-{it['beat'] or 'x'}-{it['kind']}.png"
-        extract(a.video, it["t"], p)
+        extract(a.video, it["t"], p, float(score.get("fps", 24)), it.get("frame"))
         it["path"] = str(p)
     sheet(items, a.out / "contact.png", None)
     if a.view_width:

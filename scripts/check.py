@@ -177,14 +177,19 @@ def communication(r: Review, stage: str, sheet: str | None):
                            + ". Checks the plan's timing, not the rendered text.",
                   fix=None if status == "pass" else
                   f"hold at least {chars / threshold:.2f}s, cut words, or set delivery.max_text_cps with a reason")
-            if stage != "animatic":
-                r.add("communication.legible_at_view", "needs_review", True, beat=b["id"], t=t,
-                      method="inspection", evidence=f"expected '{text}'; see {sheet}",
-                      fix="inspect individual frames at intended viewing width, not a scaled-down sheet")
-            if stage != "style_frames":
-                r.add("communication.rendered_text", "needs_review", True, beat=b["id"], t=t,
-                      method="inspection", evidence=f"expected '{text}' readable for {hold:.2f}s from {t:.3f}s",
-                      fix="verify actual text, appearance/disappearance times and readable hold in the video")
+        cues = [c for c in text_cues(b) if c.get("text")]
+        if cues:
+            listing = "; ".join(f"'{c['text']}' from {b['start'] + float(c.get('start', 0)):.2f}s for "
+                                f"{float(c.get('hold', 0)):.2f}s" for c in cues)
+            if stage == "style_frames":
+                r.add("communication.legible_at_view", "needs_review", True, beat=b["id"], t=b["start"],
+                      method="inspection", evidence=f"{listing}; see {sheet}",
+                      fix="inspect the still at intended viewing width, not a scaled-down sheet")
+            else:
+                r.add("communication.rendered_text", "needs_review", True, beat=b["id"], t=b["start"],
+                      method="inspection", evidence=listing,
+                      fix="in the video: each cue appears when planned, holds long enough to read, "
+                          "and is legible at viewing width")
 
     if any(v for _, _, v in supers) and stage != "style_frames":
         r.add("communication.speech", "needs_review", True,
@@ -194,20 +199,30 @@ def communication(r: Review, stage: str, sheet: str | None):
 
 # ------------------------------------------------------------------ evidence
 
-def evidence(r: Review, ledger: dict):
+def evidence(r: Review, ledger: dict, stage: str = "final"):
+    """Ledger errors run every stage. Content review prompts run at style frames and final
+    only: the animatic reviews timing, and its words are the same as the final's."""
+    review_content = stage != "animatic"
     claims = {c["id"]: c for c in ledger.get("claims", [])}
     beats = r.score.get("beats", [])
     for c in claims.values():
         if c.get("type") == "fact" and not (c.get("source") and c.get("evidence")):
             r.add("evidence.fact_supported", "fail", True, evidence=f"claim {c['id']} has no source or evidence",
                   method="plan", fix="support the claim or change/remove it; relabelling alone does not supply evidence")
-    for c in claims.values():
+    for c in (claims.values() if review_content else []):
         if c.get("type") in ("fact", "inference"):
             r.add("evidence.source_support", "needs_review", True, method="inspection",
                   evidence=f"claim {c['id']}: {c.get('source', 'no source')} / {c.get('evidence', 'no evidence')}",
                   fix="check that the actual source supports the wording and scope, not just that fields exist")
     for b in beats:
         sup, vo = text_of(b)
+        if not review_content:
+            pid = b.get("proves")
+            for i in (pid if isinstance(pid, list) else ([pid] if pid else [])):
+                if i not in claims:
+                    r.add("evidence.claim_exists", "fail", True, beat=b["id"], t=b["start"],
+                          evidence=f"beat proves '{i}', which is not in evidence.json", fix="add the claim or remove it")
+            continue
         r.add("evidence.coverage", "needs_review", True, beat=b["id"], t=b["start"], method="inspection",
               evidence=f"planned text/VO: {sup} {vo}; visual job: {b.get('job', '')}",
               fix="compare rendered words, speech and implied claims with the ledger; record when no claims apply")
@@ -470,6 +485,11 @@ def judged(r: Review, stage: str, sheet: str | None, strip_png: str | None):
     if stage in ("style_frames", "final"):
         r.add("judged.reel_bar", "needs_review", False, evidence=f"see {sheet}", method="inspection",
               fix="Would this go first in a senior motion designer's showreel? Name what holds it back.")
+    if stage in ("animatic", "final"):
+        r.add("judged.cold_viewer", "needs_review", False, method="inspection",
+              evidence="a reader with no plan context, frames only",
+              fix="Who is it for (by 0:05)? What is it? What do I do next? What moment do I remember? "
+                  "Compare with the treatment's intake answers.")
     if stage == "final":
         r.add("judged.story", "needs_review", False, method="inspection",
               evidence="the chosen telling, proposition and last beat in plan/treatment.md",
@@ -530,7 +550,7 @@ def main() -> None:
                 r.add("integrity.style_frame_missing", "fail", True, beat=b["id"], evidence=f"{p} not found")
                 continue
             build = float((b.get("motion") or {}).get("build", 0) or 0)
-            mid = b["start"] + build + (b["dur"] - build) / 2
+            mid = float(b.get("style_at", b["start"] + build + (b["dur"] - build) / 2))
             samples.append({"beat": b["id"], "kind": "style (mid-hold)", "t": round(mid, 3), "path": str(p)})
         frames_mod.sheet(samples, a.out / "contact.png", None)
         sheet = str(a.out / "contact.png")
@@ -558,7 +578,7 @@ def main() -> None:
             fdir.mkdir(exist_ok=True)
             for k, s in enumerate(samples):
                 p = fdir / f"{k:03d}-{s['beat'] or 'x'}-{s['kind']}.png"
-                frames_mod.extract(a.video, s["t"], p)
+                frames_mod.extract(a.video, s["t"], p, fps, s.get("frame"))
                 s["path"] = str(p)
             write_json(fdir / "frames.json", {"stage": a.stage, "samples": samples})
             frames_mod.sheet(samples, a.out / "contact.png", None)
@@ -573,7 +593,7 @@ def main() -> None:
 
     frame_alignment(r)
     communication(r, a.stage, sheet)
-    evidence(r, ledger)
+    evidence(r, ledger, a.stage)
     commitments(r, a.stage)
     defaults(r, load_json(a.audiomap) if a.audiomap else None, events)
     judged(r, a.stage, sheet, strip_png)
