@@ -29,6 +29,8 @@ def sample_times(score: dict, stage: str, duration: float, extra: list[float]) -
     fps = float(score.get("fps", 24))
     one = 1.0 / fps
     out = []
+    if stage != "style_frames":
+        out.append({"beat": (score.get("beats") or [{}])[0].get("id"), "kind": "first-frame", "t": 0.0})
     for i, b in enumerate(score.get("beats", [])):
         start, dur = float(b["start"]), float(b["dur"])
         end = start + dur

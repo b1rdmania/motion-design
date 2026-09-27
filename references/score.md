@@ -68,11 +68,25 @@
 
 A match cut can be instantaneous. For example, `{"type":"cut","relationship":"same circular shape"}` declares a cut to detect and a relationship to inspect. A morph need not contain a cut. Detector misses are uncertain, not proof of a timing failure.
 
+## Whole frames
+
+Put every beat start on a whole frame: a multiple of 1 ÷ fps (at 30 fps, 4.3667 is frame 131; 4.367 may round to frame 132). Renderers round differently. `check.py` flags off-frame starts (`plan.frame_aligned`).
+
+## Embedded footage
+
+A beat that plays other footage (a before/after, a screen recording, a clip) declares it:
+
+```json
+"footage": {"src": "inputs/before.mp4", "in": 0.0, "rect": [68, 120, 944, 531]}
+```
+
+`src` is relative to the project folder. `in` is the source time at the beat's start. `rect` is `[x, y, width, height]` in the render, and the whole frame if you leave it out. `check.py` compares frames from the render with the source (`fidelity.footage`). It skips its own cut and hold heuristics inside footage beats, because those cuts belong to the footage.
+
 ## Additional timing and review fields
 
 - `text_cues`: optional list on a beat, each `{text, start, hold}`. `start` is relative to the beat; cues can overlap or appear while the camera keeps moving. Legacy `super` is retained and can also set `start`; otherwise it starts after `motion.build`.
 - `sound.cues`: multiple sound cues are allowed; their `t` values are absolute film seconds. `events` also uses absolute film seconds. A musical dropout with ambience is a sound cue, not a measured `silence` event.
-- `delivery.max_text_cps`: optional explicit plan requirement. Without it, reading speed only prompts inspection. The checker does not observe text timing automatically.
+- `delivery.max_text_cps`: the planned reading-speed gate. Default 25 characters per second; it blocks when a cue exceeds it. Set it higher or lower with a reason. It checks the plan's timing only; the rendered text is checked on the frames.
 - `audio_analysis`: optional `{silence_db: -50, min_silence: 0.25}`. Match these to the material. Silence findings report both detected boundaries.
 - `review_hints`: optional list of rhythm prompts (`default.pace_varies`, `default.cut_on_phrase`). No rigid rhythm profile runs by default.
 - Explicit `delivery.loudness_lufs`, `loudness_tolerance` and `true_peak_dbtp` govern blocking sound limits. The example's values are illustrative, not mandatory.

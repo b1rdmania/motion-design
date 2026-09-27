@@ -12,11 +12,21 @@ No music bed, narration, sound effect, paid provider or API key is required. Use
 
 ## Editorial choices
 
-Choose music by phrase structure, energy, instrumentation, relevance and ending. Tempo alone does not establish mood or quality; no genre is inherently inappropriate. Map beats only when useful. Deliberate silence, ambience, fades and an abrupt expressive stop are valid choices. Avoid unintended clicks, clipped tails, duplication or gaps.
+Choose music by phrase structure, energy, instrumentation, relevance and ending. Generated music often ignores its prompt: tracks come back the wrong length, stop pulsing early or go silent. Analyse every generated track before timing anything to it, and record the prompt. Tempo alone does not establish mood or quality; no genre is inherently inappropriate. Map beats only when useful. Deliberate silence, ambience, fades and an abrupt expressive stop are valid choices. Avoid unintended clicks, clipped tails, duplication or gaps.
 
 Distinguish **silence** (the whole mix falls below a declared analysis threshold) from a **dropout** (for example, music stops while ambience continues). Do not declare a dropout as a measured silence. Set silence length and re-entry for the scene, not a fixed frame recipe.
 
 Listen to the exported mix when possible. A cue list or assembly log can help diagnose a problem but cannot establish what the file sounds like. If listening is unavailable, leave speech intelligibility and subjective sound review unresolved and report that limitation.
+
+## Audiomap
+
+For a music-led film, map the track before timing the picture:
+
+```
+python3 SKILL_DIR/scripts/beatmap.py assets/music.wav --out plan/audiomap.json
+```
+
+It writes an estimated tempo, a beat grid, onsets, bass entries (below 150 Hz) and an energy curve. It is heuristic: check the grid and the key moments against the waveform or by ear. On calm or rubato music, write cue points by hand (`{"beats_sec": [...], "phrases": [{"start": ...}]}`). Pass it to `check.py --audiomap` and add `default.cut_on_phrase` to `score.review_hints` to compare cuts with it.
 
 ## Mixing
 

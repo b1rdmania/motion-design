@@ -67,9 +67,29 @@ def section(video: Path, crit_path: Path, plan: Path) -> tuple[list[str], bool]:
     if crit.get("overridden"):
         lines += ["**Overridden defaults:**", *[
             f"- `{o['rule']}`: {o['reason']}" for o in crit["overridden"]], ""]
+    if crit.get("accepted_limits"):
+        lines += ["**Accepted limits:**", *[f"- {x['limit'] if isinstance(x, dict) else x}"
+                                             for x in crit["accepted_limits"]], ""]
     for u in crit.get("unresolved", []):
         lines.append(f"- unresolved: {u}")
     return lines, ok
+
+
+def provenance(plan: Path) -> list[str]:
+    score = load_json(plan / "score.json", {})
+    assets = load_json(plan / "assets.json", {})
+    lines = ["## Provenance", ""]
+    music = score.get("music") or {}
+    if music:
+        lines.append(f"- Music: {music.get('track', '—')} · {music.get('provenance', 'provenance not recorded')}")
+    for x in assets.get("assets", []):
+        lines.append(f"- {x.get('id', x.get('path'))}: {x.get('path', '')} · source {x.get('source', 'not recorded')}"
+                     f" · licence {x.get('licence', 'unknown')}" + (" · sample data" if x.get("sample_data") else ""))
+    for m in assets.get("missing", []):
+        lines.append(f"- Missing: {m}")
+    if len(lines) == 2:
+        lines.append("- No music or asset provenance recorded (plan/assets.json, score.music).")
+    return lines + [""]
 
 
 def main() -> None:
@@ -97,7 +117,7 @@ def main() -> None:
         f"Plan: `{a.plan}` · evidence ledger: `{a.plan / 'evidence.json'}` · "
         f"treatment: `{a.plan / 'treatment.md'}`", "",
     ]
-    a.out.write_text("\n".join(head + body) + "\n")
+    a.out.write_text("\n".join(head + body + provenance(a.plan)) + "\n")
     print(f"{'clear' if all_ok else 'NOT CLEAR'} → {a.out}")
     sys.exit(0 if all_ok else 1)
 

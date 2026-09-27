@@ -59,3 +59,12 @@ ffmpeg -i renders/final_0001-END.mp4 -i audio/mix.wav -filter_complex \
 The encoder output filename depends on the frame range. Check the real name before muxing.
 
 Read `transition_in.type` for the edit mechanism and `relationship` for visual continuity. Legacy `match:<property>` means a cut with a relationship, not a compulsory dissolve. Keep total duration fixed when adding overlap. Use the intended delivery size for each composition and review each final format.
+
+## Quality
+
+Blender is the tool for light, material, depth and a real camera. Use it where those carry the idea.
+
+- **Eevee** for style frames and the animatic. **Cycles** with denoising for final hero shots when bounce light, glass or fog matter. Record the samples and render time in the treatment.
+- Turn on depth of field and motion blur deliberately. They are most of what separates a rendered shot from a 3D preview.
+- Blender text is fine for dimensional type. For crisp UI and editorial type, render plates (PNG sequence, or ProRes 4444 with alpha) and composite the type in HyperFrames or Remotion (`references/toolchain.md`).
+- Keep the scene in the project (`.blend` plus textures), so the film can be re-rendered and edited.

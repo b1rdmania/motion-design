@@ -22,7 +22,7 @@ Full decode, required dimensions, fps and duration are checked against the plan.
 
 ## Communication
 
-Reading speed calculations use the **plan**, not observed on-screen timing. More than 25 characters/second prompts review; it is not a universal failure. Only an explicit `delivery.max_text_cps` makes that plan limit blocking.
+The planned reading-speed gate (`communication.reading_time_plan`) blocks when a text cue's planned hold gives more than 25 characters per second, or more than `delivery.max_text_cps` when that is set. It checks the **plan**, not the render. Whether the text actually appeared and could be read is a separate judged finding (`communication.rendered_text`, `communication.legible_at_view`).
 
 Inspect actual text, its appearance/disappearance and readable interval in the moving render. Check individual frames at the intended viewing width; an entire contact sheet scaled to fit a window is not a valid phone-size test. Listen to required speech. If playback is unavailable, record that limit and leave the finding open.
 
@@ -40,12 +40,28 @@ Compare mandatory commitments with the actual frames. Cut/onset/silence detector
 
 A readable hold can contain camera travel, grain or secondary action. A pixel-difference still-run metric cannot verify readability and does not block delivery. A match cut may be a hard edit: inspect both the edit and its visual relationship.
 
+## Embedded footage
+
+`fidelity.footage` compares three frames of each footage beat with its source at the declared in point and crop. A mismatch is `needs_review`: check sync, crop and colour. Honest before/after films depend on it.
+
+## Does it land (judged)
+
+- `judged.story` (final): watching as the viewer would, does the telling chosen in step 3 come through?
+- `judged.reel_bar` (style frames and final): would this go first in a senior motion designer's showreel? Name what holds it back. "Competent" is a fail of the bar, not a pass.
+- `judged.frame`, `judged.reskin`, `judged.transition`, `judged.pacing`: the craft questions per beat.
+
+These do not block delivery on their own. They are where the film gets better, so settle them honestly.
+
+## Accepted limits
+
+Some limits you judge and accept: a note that is small at phone width, a slightly soft upscale. Record them with `resolve.py --accept-limit "…"`. They go into `DELIVERY.md` separately from open findings.
+
 ## Craft
 
 Frame composition, brand fit, transition quality, rhythm and subjective sound are judged. `defaults.md` contains optional prompts. No mandatory quota of effects, stillness, references or variation applies.
 
 ## Sampling and stages
 
-Inspect representative style frames before expensive rendering when useful. For moving drafts/finals, extract hold boundaries, text-cue intervals, both sides of transitions and any flagged moments. Use `frames.py --at <seconds,...>` for additional samples. Review the moving sequence for temporal judgments; stills alone cannot settle them.
+Inspect representative style frames before expensive rendering when useful. For moving drafts/finals, extract frame 0 (always: it is the feed thumbnail), hold boundaries, text-cue intervals, both sides of transitions and any flagged moments. Use `frames.py --at <seconds,...>` for additional samples. Review the moving sequence for temporal judgments; stills alone cannot settle them.
 
 Run the chosen stages and preserve each critique separately. The default final revision budget is two rounds. When exhausted, deliver with limitations rather than relabelling unresolved work as successful. A material plan amendment or changed render invalidates the prior receipt.

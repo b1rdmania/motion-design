@@ -70,13 +70,29 @@ def analyse(x: np.ndarray, silence_db: float, min_silence: float) -> dict:
                                  "dur": round((end - start) * WIN, 3)})
             start = None
 
+    # Low band (< 150 Hz): bass entries and kicks barely move broadband energy.
+    mono = x.mean(axis=1).astype(np.float64)
+    low_db = np.full(n, -120.0)
+    if n:
+        seg = mono[: n * hop].reshape(n, hop) * np.hanning(hop)
+        spec = np.abs(np.fft.rfft(seg, axis=1)) ** 2
+        freqs = np.fft.rfftfreq(hop, 1 / SR)
+        low = spec[:, (freqs > 20) & (freqs < 150)].sum(axis=1) / hop
+        low_db = 10 * np.log10(low + 1e-12)
+    low_rise = np.diff(low_db, prepend=low_db[:1])
+    low_onsets = []
+    floor = float(np.percentile(low_db, 20)) if n else -120.0
+    for i in range(1, n):
+        if low_rise[i] > 10 and low_db[i] > floor + 15 and (not low_onsets or i * WIN - low_onsets[-1] > 0.15):
+            low_onsets.append(round(i * WIN, 3))
+
     rise = np.diff(db, prepend=db[:1])
     onsets = []
     for i in range(1, n):
         if rise[i] > 12 and db[i] > silence_db + 10 and (not onsets or i * WIN - onsets[-1] > 0.08):
             onsets.append(round(i * WIN, 3))
 
-    return {"clipped_samples": clipped, "silences": silences, "onsets": onsets,
+    return {"clipped_samples": clipped, "silences": silences, "onsets": onsets, "low_onsets": low_onsets,
             "duration": round(len(x) / SR, 3),
             "max_abs_sample": float(np.max(np.abs(x))) if x.size else 0.0,
             "analysis": {"silence_db": silence_db, "min_silence": min_silence, "window_seconds": WIN}}

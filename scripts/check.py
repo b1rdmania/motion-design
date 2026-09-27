@@ -36,6 +36,7 @@ REF = {
     "fidelity": "references/review.md#fidelity",
     "default": "references/defaults.md",
     "judged": "references/review.md#judged",
+    "plan": "references/score.md",
 }
 
 DIGITS = re.compile(r"\d|%|\bper ?cent\b", re.I)
@@ -167,14 +168,15 @@ def communication(r: Review, stage: str, sheet: str | None):
             hold = float(cue.get("hold", 0))
             cps = chars / hold if hold > 0 else float("inf")
             limit = r.score.get("delivery", {}).get("max_text_cps")
-            explicit = limit is not None
-            threshold = float(limit) if explicit else 25
-            status = ("fail" if explicit else "needs_review") if cps > threshold else "pass"
+            threshold = float(limit) if limit is not None else 25.0
+            status = "fail" if cps > threshold else "pass"
             t = b["start"] + float(cue.get("start", 0))
-            r.add("communication.reading_time_plan", status, explicit, beat=b["id"], t=t, method="plan",
-                  evidence=f"Plan only: {chars} chars / {hold:.2f}s = {cps:.1f} cps; "
-                           + (f"required maximum {threshold}" if explicit else "25 cps review trigger"),
-                  fix="verify the actual reading interval; adjust for audience and text complexity")
+            r.add("communication.reading_time_plan", status, True, beat=b["id"], t=t, method="plan",
+                  evidence=f"Planned reading speed: {chars} chars / {hold:.2f}s = {cps:.1f} cps; gate {threshold:g} cps"
+                           + ("" if limit is not None else " (default)")
+                           + ". Checks the plan's timing, not the rendered text.",
+                  fix=None if status == "pass" else
+                  f"hold at least {chars / threshold:.2f}s, cut words, or set delivery.max_text_cps with a reason")
             if stage != "animatic":
                 r.add("communication.legible_at_view", "needs_review", True, beat=b["id"], t=t,
                       method="inspection", evidence=f"expected '{text}'; see {sheet}",
@@ -222,6 +224,10 @@ def evidence(r: Review, ledger: dict):
                 r.add("evidence.metaphor_wording", "needs_review", True, beat=b["id"], t=b["start"],
                       evidence=f"metaphor {i}; limits: {c.get('limits', '—')}",
                       fix="confirm the image and words do not present the metaphor as a fact")
+            elif c.get("type") == "sample":
+                r.add("evidence.sample_labelled", "needs_review", True, beat=b["id"], t=b["start"],
+                      evidence=f"sample/illustrative {i}; limits: {c.get('limits', '—')}",
+                      fix="confirm the film does not present sample data or mock UI as a real result")
             pw = c.get("permitted_wording")
             if pw and words and pw.lower() not in words.lower() and words.lower() not in pw.lower():
                 r.add("evidence.permitted_wording", "needs_review", True, beat=b["id"], t=b["start"],
@@ -320,19 +326,24 @@ def fidelity(r: Review, strip: dict, audio: dict, events: list[dict], stage: str
                   method="heuristic", evidence=f"planned {t:.3f}–{end:.3f}s; nearest detected {found}; tolerance {allowance:.3f}s",
                   fix=None if ok else "check both boundaries, threshold and whether this is a dropout with ambience rather than silence")
         elif kind == "hit" and audio.get("has_audio"):
-            near = min((abs(o - t) for o in audio.get("onsets", [])), default=None)
+            onsets = list(audio.get("onsets", [])) + list(audio.get("low_onsets", []))
+            near = min((abs(o - t) for o in onsets), default=None)
             ok = near is not None and near <= tol + 0.02
-            r.add("fidelity.hit", "pass" if ok else "needs_review", True, beat=beat, t=t,
-                  evidence=f"nearest onset {near:.3f}s away" if near is not None else "no onset detected",
-                  fix=None if ok else "confirm the hit lands; the onset detector is a hint")
+            r.add("fidelity.hit", "pass" if ok else "needs_review", False, beat=beat, t=t, method="heuristic",
+                  evidence=(f"nearest onset (broadband or below 150 Hz) {near:.3f}s away" if near is not None
+                            else "no onset detected"),
+                  fix=None if ok else "confirm the hit lands; onset detection is a hint, not a measurement")
     planned = [float(e["t"]) for e in events if e["type"] == "cut"]
+    footage_spans = [(b["start"], b["start"] + b["dur"]) for b in r.score.get("beats", []) if b.get("footage")]
     for c in cuts:
+        if any(s <= c < e for s, e in footage_spans):
+            continue  # cuts inside embedded footage belong to that footage; fidelity.footage covers it
         if not any(abs(c - p) <= tol for p in planned):
             r.add("fidelity.unplanned_cut", "needs_review", False, t=c, beat=beat_at(r.score, c),
                   evidence=f"cut detected at {c}s with no planned cut", fix="a flash, a pop or an unplanned edit?")
     for b in r.score.get("beats", []):
         hold = float((b.get("motion") or {}).get("hold", 0) or 0)
-        if hold <= 0 or stage == "style_frames":
+        if hold <= 0 or stage == "style_frames" or b.get("footage"):
             continue
         s, e = b["start"], b["start"] + b["dur"]
         best = max((min(run_["end"], e) - max(run_["start"], s) for run_ in strip.get("still_runs", [])), default=0)
@@ -350,12 +361,66 @@ def commitments(r: Review, stage: str):
                   method="inspection", evidence=f"mandatory: {c}", fix="confirm it is present and exact in the frame")
 
 
+def frame_alignment(r: Review):
+    fps = float(r.score.get("fps", 24))
+    off = []
+    for b in r.score.get("beats", []):
+        frames = float(b["start"]) * fps
+        if abs(frames - round(frames)) > 0.01:
+            off.append(f"{b['id']} starts at frame {frames:.2f}; use {round(frames) / fps:.4f}s")
+    r.add("plan.frame_aligned", "needs_review" if off else "pass", False, method="plan",
+          evidence="; ".join(off) if off else "every beat starts on a whole frame",
+          fix="renderers round differently; put beat starts on whole frames" if off else None)
+
+
+def footage(r: Review, video: Path, plan_dir: Path, info: dict):
+    """Embedded footage must be the source, in sync and uncropped unless the plan says otherwise."""
+    for b in r.score.get("beats", []):
+        f = b.get("footage")
+        if not f:
+            continue
+        src = (plan_dir / ".." / f["src"]).resolve() if not Path(f["src"]).is_absolute() else Path(f["src"])
+        if not src.exists():
+            r.add("fidelity.footage", "fail", True, beat=b["id"], t=b["start"], evidence=f"source {f['src']} not found")
+            continue
+        v = info["video"]
+        x, y, w, h = f.get("rect", [0, 0, v["width"], v["height"]])
+        diffs = []
+        for k in (0.25, 0.5, 0.75):
+            t = b["start"] + k * b["dur"]
+            st = float(f.get("in", 0)) + k * b["dur"]
+            a = _grab(video, t, f"crop={w}:{h}:{x}:{y},scale=160:90")
+            c = _grab(src, st, "scale=160:90")
+            if a is not None and c is not None:
+                diffs.append(float(np.abs(a - c).mean()))
+        if not diffs:
+            r.add("fidelity.footage", "needs_review", True, beat=b["id"], t=b["start"], method="heuristic",
+                  evidence="could not sample the footage", fix="compare the embedded clip with its source by eye")
+            continue
+        worst = max(diffs)
+        ok = worst < 0.04
+        r.add("fidelity.footage", "pass" if ok else "needs_review", True, beat=b["id"], t=b["start"],
+              method="heuristic",
+              evidence=f"mean abs difference vs source {', '.join(f'{d:.3f}' for d in diffs)} (pass < 0.040)",
+              fix=None if ok else "check sync (in point), crop (rect) and colour against the source")
+
+
+def _grab(path: Path, t: float, vf: str):
+    import subprocess
+    out = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{max(t, 0):.3f}", "-i", str(path), "-frames:v", "1",
+                          "-vf", vf + ",format=rgb24", "-f", "rawvideo", "-"], capture_output=True)
+    if out.returncode or len(out.stdout) != 160 * 90 * 3:
+        return None
+    return np.frombuffer(out.stdout, dtype=np.uint8).astype(np.float32) / 255.0
+
+
 # ------------------------------------------------------------------ defaults
 
 def defaults(r: Review, audiomap: dict | None, events: list[dict]):
     """Uncalibrated prompts, not rules. Rhythm metrics are opt-in."""
     beats = r.score.get("beats", [])
     hints = set(r.score.get("review_hints", []))
+    before = len(r.findings)
     for b in beats:
         for cue in text_cues(b):
             text, hold = cue.get("text", ""), float(cue.get("hold", 0))
@@ -375,6 +440,11 @@ def defaults(r: Review, audiomap: dict | None, events: list[dict]):
             r.add("default.pace_varies", "needs_review", False, method="plan",
                   evidence=f"beat-length variation {cv:.2f}; rhythm quality is not measured",
                   fix="inspect pacing; even rhythm can be intentional")
+    flagged = {f["rule"] for f in r.findings[before:]}
+    for rule, what in (("default.super_speed", "all planned text cues at or under 17 cps"),
+                       ("default.stock_copy", "no stock openers or filler in planned text or VO")):
+        if rule not in flagged and rule not in r.overrides:
+            r.add(rule, "pass", False, method="plan", evidence=what)
     words = sum(len(text_of(b)[1].split()) for b in beats)
     dur = float(r.score.get("duration", 0)) or 1
     if words / dur > 2.5:
@@ -388,12 +458,22 @@ def defaults(r: Review, audiomap: dict | None, events: list[dict]):
             if e["type"] == "cut" and not any(abs(float(e["t"]) - g) <= 2 / r.score.get("fps", 24) for g in grid):
                 r.add("default.cut_on_phrase", "needs_review", False, method="plan", t=e["t"],
                       evidence="cut falls outside the suggested grid; off-grid editing can be deliberate")
+        if not any(f["rule"] == "default.cut_on_phrase" for f in r.findings):
+            r.add("default.cut_on_phrase", "pass", False, method="plan",
+                  evidence=f"every planned cut is within 2 frames of the audiomap grid ({len(grid)} points)")
 
 
 # -------------------------------------------------------------------- judged
 
 def judged(r: Review, stage: str, sheet: str | None, strip_png: str | None):
     beats = r.score.get("beats", [])
+    if stage in ("style_frames", "final"):
+        r.add("judged.reel_bar", "needs_review", False, evidence=f"see {sheet}", method="inspection",
+              fix="Would this go first in a senior motion designer's showreel? Name what holds it back.")
+    if stage == "final":
+        r.add("judged.story", "needs_review", False, method="inspection",
+              evidence="the chosen telling, proposition and last beat in plan/treatment.md",
+              fix="Watching as the viewer would: does the story from step 3 come through?")
     if stage in ("style_frames", "final"):
         for b in beats:
             r.add("judged.frame", "needs_review", False, beat=b["id"], t=b["start"],
@@ -449,7 +529,9 @@ def main() -> None:
             if not p.exists():
                 r.add("integrity.style_frame_missing", "fail", True, beat=b["id"], evidence=f"{p} not found")
                 continue
-            samples.append({"beat": b["id"], "kind": "style", "t": b["start"], "path": str(p)})
+            build = float((b.get("motion") or {}).get("build", 0) or 0)
+            mid = b["start"] + build + (b["dur"] - build) / 2
+            samples.append({"beat": b["id"], "kind": "style (mid-hold)", "t": round(mid, 3), "path": str(p)})
         frames_mod.sheet(samples, a.out / "contact.png", None)
         sheet = str(a.out / "contact.png")
         if view_width:
@@ -487,7 +569,9 @@ def main() -> None:
             flat_frames(r, samples)
             sound(r, audio, delivery, events, a.stage)
             fidelity(r, strip, audio, events, a.stage)
+            footage(r, a.video, a.plan, info)
 
+    frame_alignment(r)
     communication(r, a.stage, sheet)
     evidence(r, ledger)
     commitments(r, a.stage)
@@ -510,6 +594,7 @@ def main() -> None:
         "findings": r.findings,
         "overridden": r.overridden,
         "unresolved": [],
+        "accepted_limits": [],
     }
     write_json(a.out / "critique.json", critique)
     c = critique["counts"]

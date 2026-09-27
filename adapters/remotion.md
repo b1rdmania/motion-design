@@ -53,3 +53,10 @@ npx remotion render src/index.ts Film renders/final.mp4
 When sound is planned, use representative audio in the animatic so its timing can be judged. A silent film needs no audio asset. See `references/sound.md`.
 
 Read `transition_in.type` for the edit mechanism and `relationship` for visual continuity. Legacy `match:<property>` means a cut with a relationship, not a compulsory dissolve. Keep total duration fixed when adding overlap. Use the intended delivery size for each composition and review each final format.
+
+## Quality
+
+- Load brand fonts from local files (`@remotion/fonts` `loadFont`, or `@font-face` with `staticFile`), and wait for them before rendering frames. Check the style frames for substitution.
+- Use `<OffthreadVideo>` for embedded footage, so frames stay exact. Declare the clip in `beats[].footage` for the sync check.
+- `spring()` gives physical weight. `interpolate` with explicit easing gives editorial control. Choose per motion, not one for everything.
+- For light and depth, render Blender plates and composite them (`references/toolchain.md`). `@remotion/three` suits simple 3D inside React.

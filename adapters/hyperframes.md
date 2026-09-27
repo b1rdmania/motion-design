@@ -2,15 +2,36 @@
 
 HyperFrames builds the film. When installed, `/hyperframes` and its workflow skills own layout, motion code and rendering; otherwise use the renderer documentation. This skill owns the plan and the review.
 
-**Fixture status: not yet run.**
+**Fixture status: not yet run.** Used in two test films (HyperFrames 0.8.79); the render and snapshot commands below worked as written.
 
-## Handoff
+## Handoff: keep HyperFrames' craft
 
-Give the available HyperFrames renderer workflow the treatment and score as the agreed brief. Tell it:
+HyperFrames' workflows carry real motion craft: `/motion-graphics` has a director and builder with a motion vocabulary and a catalogue of blocks, and `/general-video` builds each frame with a frame worker. Use them. Do not hand-build `index.html` to avoid their planning step. In testing, that produced a clearer idea with flatter motion than the plain workflow.
 
-- The storyboard is decided. Use `plan/score.json` for beat order, timing, copy and transitions. Do not replace it with a workflow's default arc.
-- Visual style comes from the treatment's references and brand section. Use a house style or named palette only if the treatment asks for it.
-- The music, VO and SFX are the ones named in the score.
+The clean handoff is a `BRIEF.md` in the HyperFrames project. When a `BRIEF.md` exists, `/hyperframes` skips its intent interview and runs the named workflow. Write one from the plan:
+
+```markdown
+---
+workflow: motion-graphics        # short, unnarrated, design-led; multi-scene or narrated → general-video
+flow: automation
+storyboard: no                   # the plan's score is the storyboard
+message: "<proposition>"
+angle: "<chosen telling, one line>"
+length: <seconds>s
+aspect: <16:9 | 4:5 | 9:16>
+audience: <audience>
+narration: <yes | no>
+capture: no
+---
+# <title>
+
+The plan in ../plan/ is locked for **what and when**: beat order, timing (score.json, in seconds),
+every text cue, commitments, brand assets (assets.json) and the evidence limits.
+The workflow owns **how**: shot design, layout, motion, blocks, effects and transitions within each beat.
+Do not add, remove, reorder or retime beats, and do not rewrite copy. Load fonts from the files in assets.json.
+```
+
+Then invoke `/hyperframes`. Check its shot plan or storyboard against the score before it builds. If it retimes or rewrites, correct it there.
 
 ## Mapping
 
@@ -28,11 +49,11 @@ Give the available HyperFrames renderer workflow the treatment and score as the 
 
 ```
 # style frames: one still per beat, mid-hold
-npx hyperframes snapshot --at <t_b1>,<t_b2>,...
-#   then copy each snapshot to renders/style/<beat-id>.png
+npx hyperframes snapshot <project-dir> --at <t_b1>,<t_b2>,... --no-end -o <out-dir>
+#   then copy each snapshot to renders/style/<beat-id>.png (--no-end stops an extra end frame shifting the order)
 
 # animatic
-npx hyperframes render --quality draft --output renders/animatic.mp4
+npx hyperframes render --quality draft   # renders at full size; fast enough for an animatic --output renders/animatic.mp4
 
 # final
 npx hyperframes render --quality delivery --output renders/final.mp4
@@ -43,3 +64,5 @@ For a mid-hold time, use `start + build + (dur − build) / 2`.
 Also run `npx hyperframes check` before each render. It catches overflow, collisions and runtime errors that this skill's review does not look for.
 
 Read `transition_in.type` for the edit mechanism and `relationship` for visual continuity. Legacy `match:<property>` means a cut with a relationship, not a compulsory dissolve. Keep total duration fixed when adding overlap. Use the intended delivery size for each composition and review each final format.
+
+**Fonts.** HyperFrames substitutes a font when the family name does not resolve: in testing, a logo's Helvetica Neue rendered as Inter. Declare each brand font with `@font-face` pointing at the file from `assets.json`, and check the style frames for it.

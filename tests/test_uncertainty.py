@@ -103,7 +103,7 @@ def test_explicit_zero_hold_is_not_replaced_by_beat_duration():
     s = score('Read me'); s['beats'][0]['super']['hold'] = 0
     r = check.Review(s, {})
     check.communication(r, 'final', 'sheet')
-    assert finding(r, 'communication.reading_time_plan')['status'] == 'needs_review'
+    assert finding(r, 'communication.reading_time_plan')['status'] == 'fail'
 
 
 def test_legacy_and_structured_match_cuts_are_cut_events():
