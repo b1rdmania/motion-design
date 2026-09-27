@@ -75,7 +75,9 @@ def test_measurement_failure_is_not_intended_silence():
 def test_nonnumeric_claim_requires_coverage_review():
     r = check.Review(score('Guaranteed approval'), {})
     check.evidence(r, {'claims': []})
-    assert finding(r, 'evidence.coverage')['status'] == 'needs_review'
+    check.beat_review(r, 'final', 'sheet')
+    f = finding(r, 'beat.review')
+    assert f['status'] == 'needs_review' and f['blocking'] and 'Claims' in f['evidence']
     assert not any(f['status'] == 'not_applicable' for f in r.findings)
 
 
@@ -97,7 +99,8 @@ def test_reading_speed_blocks_only_explicit_plan_limit():
     check.communication(r, 'final', 'sheet')
     f = finding(r, 'communication.reading_time_plan')
     assert f['status'] == 'fail' and f['blocking'] and f['method'] == 'plan'
-    assert finding(r, 'communication.rendered_text')['status'] == 'needs_review'
+    check.beat_review(r, 'final', 'sheet')
+    assert 'Text appears when planned' in finding(r, 'beat.review')['evidence']
 
 
 def test_explicit_zero_hold_is_not_replaced_by_beat_duration():
@@ -120,7 +123,8 @@ def test_multiple_text_cues_are_timed_and_sampled_independently():
         {'text': 'First', 'start': .2, 'hold': .5}, {'text': 'Second', 'start': 1, 'hold': .8}]
     r = check.Review(s, {}); check.communication(r, 'final', 'sheet')
     assert [f['t'] for f in r.findings if f['rule'] == 'communication.reading_time_plan'] == [.2, 1]
-    text = [f for f in r.findings if f['rule'] == 'communication.rendered_text']
+    check.beat_review(r, 'final', 'sheet')
+    text = [f for f in r.findings if f['rule'] == 'beat.review']
     assert len(text) == 1 and "'First' from 0.20s" in text[0]['evidence'] and "'Second' from 1.00s" in text[0]['evidence']
     samples = frames.sample_times(s, 'final', 2, [])
     fps = s.get('fps', 24)

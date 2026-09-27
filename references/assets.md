@@ -27,6 +27,7 @@ Take exact values: hex colours, font families and weights, the logo file path. D
 
 - **Fonts from npm.** Many apps ship fonts as packages (`@fontsource/…`, `@fontsource-variable/…`) with no files in the repo. Fetch the exact pinned version with `npm pack <package>@<version>` and take the files from the tarball.
 - **Conflicting sources.** When brand sources disagree (a README banner in one blue, the app's CSS in another), the running product's CSS wins over marketing assets. Record the conflict under `missing`.
+- **The product's own words.** When the film shows the product, use its real UI wording and states (read them from the source: button labels, status names, counters). Do not invent a state the product lacks.
 - **Assets not for use.** Stock photos, or images whose notes forbid implying they show the product, go in the manifest with `"use": false` and the reason, so nobody picks them up later.
 
 ## plan/assets.json

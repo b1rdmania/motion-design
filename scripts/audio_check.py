@@ -37,7 +37,15 @@ def loudness(path: Path) -> dict:
             return None
         return None if m.group(1) == "-inf" else float(m.group(1))
 
-    return {"integrated_lufs": num(i), "true_peak_dbtp": num(tp), "lra_lu": num(lra),
+    curve = []
+    for m in re.finditer(r"t:\s*([\d.]+)\s+.*?M:\s*(-?[\d.]+|-inf)\s+S:\s*(-?[\d.]+|-inf)", text):
+        t, mom, st = m.group(1), m.group(2), m.group(3)
+        tf = float(t)
+        slot = round(tf * 2) / 2  # one reading per half second
+        if abs(tf - slot) < 0.06 and (not curve or curve[-1]["t"] != slot):
+            curve.append({"t": slot, "momentary": None if mom == "-inf" else float(mom),
+                          "short_term": None if st == "-inf" else float(st)})
+    return {"integrated_lufs": num(i), "true_peak_dbtp": num(tp), "lra_lu": num(lra), "loudness_curve": curve,
             "measurement_error": out.stderr[-500:] if out.returncode else None}
 
 

@@ -33,6 +33,8 @@ Do not add, remove, reorder or retime beats, and do not rewrite copy. Load fonts
 
 Then invoke `/hyperframes`. Check its shot plan or storyboard against the score before it builds. If it retimes or rewrites, correct it there.
 
+**Keep it light.** You do not need to read every HyperFrames reference. Read `/hyperframes-core` for the composition contract and the workflow's own SKILL.md. For audio, use your own mix (`references/sound.md`) if HyperFrames' media tools ask for a HeyGen sign-in you do not have.
+
 **House style.** HyperFrames' creative defaults (radial glows, ghost text, 2–5 decoratives per scene, ambient motion) are defaults, not requirements. When they conflict with the treatment's refusals or references, the treatment wins: say so in `BRIEF.md`.
 
 **First frames.** In HyperFrames 0.8.80, the first frame of a sub-composition could render its raw CSS state before the timeline's t=0 state applied: all lines visible at once, or a blank frame. Set every animated element's initial state in CSS to match its t=0 state, and check the first frame of each sub-composition. A `fidelity.unplanned_cut` one frame into a scene is the tell.

@@ -46,6 +46,15 @@ ffmpeg -i picture.mp4 -i mix.wav -filter_complex \
 
 Single-pass `loudnorm` can let sharp transients (ticks, hits) overshoot; the limiter at the end catches them. For a precise target, measure first (`loudnorm=print_format=json`), then apply the measured values in a second pass. Verify that the picture itself has the planned duration. Do not use `-shortest` to hide a short audio stream. A deliberately silent export can omit the audio stream altogether.
 
+## Measure what you claim
+
+You probably cannot listen. So every claim about the mix ("the bed is flat", "room tone under the opening", "no swell") must come from a measurement of the **final mix**, not the stems. In testing, an agent measured the raw music, called it flat, and missed a sound effect that swelled in the mix.
+
+- `audio.json` has a `loudness_curve`: momentary (400 ms window) and short-term (3 s window) loudness every half second. `sound.shape` summarises it.
+- Use **momentary** loudness for events and the first seconds. Short-term reads about −120 LUFS until its 3-second window fills, which looks like silence when it is not.
+- Use **short-term** loudness for bed level and swells.
+- If you still cannot tell, say so and ask a person to listen once on headphones and once on a phone speaker.
+
 ## Integrity
 
 - An explicitly selected loudness/true-peak specification can block delivery when missed. Without explicit targets, −14 LUFS ±1 and −1 dBTP are suggestions only.

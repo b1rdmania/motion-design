@@ -251,22 +251,47 @@ def test_animatic_skips_content_review_but_keeps_ledger_errors(ref, tmp_path):
     (plan / "score.json").write_text(json.dumps(score))
     crit = review(plan, ref, tmp_path / "r", stage="animatic")
     assert by_rule(crit, "evidence.claim_exists")[0]["status"] == "fail"
-    assert not by_rule(crit, "evidence.coverage")
+    assert not any("Claims" in f["evidence"] for f in by_rule(crit, "beat.review"))
 
 
 def test_resolve_by_rule_and_carry_over(ref, tmp_path):
+    plan = copy_plan(tmp_path)
+    (plan / "evidence.json").write_text(json.dumps({"claims": [
+        {"id": "a", "type": "inference", "source": "brief", "evidence": "x", "limits": "y"},
+        {"id": "b", "type": "inference", "source": "brief", "evidence": "z", "limits": "y"}]}))
     first, second = tmp_path / "r1", tmp_path / "r2"
-    review(FIXTURE, ref, first)
-    review(FIXTURE, ref, second)
+    review(plan, ref, first)
+    review(plan, ref, second)
     resolve = [sys.executable, str(SCRIPTS / "resolve.py")]
-    subprocess.run(resolve + ["--critique", str(first / "critique.json"), "--rule", "evidence.coverage",
-                              "--status", "pass", "--method", "frame inspection",
-                              "--evidence", "no claims in plain plates"], check=True, capture_output=True)
+    subprocess.run(resolve + ["--critique", str(first / "critique.json"), "--rule", "evidence.source_support",
+                              "--status", "pass", "--method", "source verification",
+                              "--evidence", "both inferences follow from the brief"], check=True, capture_output=True)
     crit = json.loads((first / "critique.json").read_text())
-    assert all(f.get("resolution") for f in by_rule(crit, "evidence.coverage"))
+    assert len(by_rule(crit, "evidence.source_support")) == 2
+    assert all(f.get("resolution") for f in by_rule(crit, "evidence.source_support"))
     subprocess.run(resolve + ["--critique", str(second / "critique.json"), "--carry-from", str(first / "critique.json")],
                    check=True, capture_output=True)
     crit2 = json.loads((second / "critique.json").read_text())
-    carried = by_rule(crit2, "evidence.coverage")
+    carried = by_rule(crit2, "evidence.source_support")
     assert carried and all("carried from" in f["resolution"]["method"] for f in carried)
     assert not any(f.get("resolution") for f in crit2["findings"] if not f["rule"].startswith("evidence."))
+
+
+def test_one_beat_review_per_beat(ref, tmp_path):
+    plan = copy_plan(tmp_path)
+    score = json.loads((plan / "score.json").read_text())
+    score["beats"][0]["text_cues"] = [{"text": "one", "start": 0, "hold": 1}, {"text": "two", "start": 0.5, "hold": 1}]
+    score["beats"][0]["commitments"] = ["logo exact", "brand font"]
+    (plan / "score.json").write_text(json.dumps(score))
+    crit = review(plan, ref, tmp_path / "r")
+    b1 = [f for f in by_rule(crit, "beat.review") if f["beat"] == "b1"]
+    assert len(b1) == 1
+    assert "logo exact" in b1[0]["evidence"] and "brand font" in b1[0]["evidence"] and "'two'" in b1[0]["evidence"]
+
+
+def test_sound_shape_summarises_the_final_mix(ref, tmp_path):
+    crit = review(FIXTURE, ref, tmp_path / "r")
+    f = by_rule(crit, "sound.shape")[0]
+    assert f["status"] == "needs_review" and not f["blocking"] and "0–5s" in f["evidence"]
+    audio = json.loads((tmp_path / "r" / "audio.json").read_text())
+    assert audio["loudness_curve"] and "momentary" in audio["loudness_curve"][0]
