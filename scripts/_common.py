@@ -83,3 +83,47 @@ def beats(score: dict) -> list[dict]:
 
 def frame_tol(score: dict, frames: int = 2) -> float:
     return frames / float(score.get("fps", 24))
+
+
+def transition(beat: dict) -> dict:
+    """Separate edit mechanism from visual continuity; accept existing scores."""
+    value = beat.get("transition_in", "cut")
+    if isinstance(value, dict):
+        return value
+    kind, _, relation = value.partition(":")
+    return {"type": "cut" if kind == "match" else kind, "relationship": relation or None}
+
+
+def text_cues(beat: dict) -> list[dict]:
+    """Cue starts are relative to the beat, not to the film."""
+    cues = [dict(c) for c in beat.get("text_cues", [])]
+    sup = beat.get("super")
+    if sup:
+        sup = dict(sup) if isinstance(sup, dict) else {"text": str(sup)}
+        start = float(sup.get("start", (beat.get("motion") or {}).get("build", 0)) or 0)
+        sup.update(start=start, hold=sup.get("hold", max(0, beat["dur"] - start)))
+        cues.insert(0, sup)
+    return [cue for cue in cues if cue.get("text")]
+
+
+def effective_status(finding: dict) -> str:
+    """A reviewer can settle uncertainty, not overwrite a measured failure."""
+    status = finding["status"]
+    resolution = finding.get("resolution", {})
+    if (status == "needs_review" and resolution.get("status") in ("pass", "fail", "not_applicable")
+            and str(resolution.get("evidence", "")).strip()
+            and str(resolution.get("method", "")).strip()):
+        return resolution["status"]
+    return status
+
+
+def review_summary(findings: list[dict]) -> dict:
+    counts = {s: 0 for s in ("fail", "needs_review", "pass", "not_applicable")}
+    blocked = pending = 0
+    for f in findings:
+        status = effective_status(f)
+        counts[status] += 1
+        blocked += bool(f["blocking"] and status == "fail")
+        pending += bool(f["blocking"] and status == "needs_review")
+    return {"counts": counts, "blocking_open": blocked + pending,
+            "verdict": "blocked" if blocked else "open" if pending else "clear"}

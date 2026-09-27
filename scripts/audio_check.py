@@ -37,7 +37,8 @@ def loudness(path: Path) -> dict:
             return None
         return None if m.group(1) == "-inf" else float(m.group(1))
 
-    return {"integrated_lufs": num(i), "true_peak_dbtp": num(tp), "lra_lu": num(lra)}
+    return {"integrated_lufs": num(i), "true_peak_dbtp": num(tp), "lra_lu": num(lra),
+            "measurement_error": out.stderr[-500:] if out.returncode else None}
 
 
 def samples(path: Path) -> np.ndarray:
@@ -49,11 +50,12 @@ def samples(path: Path) -> np.ndarray:
 
 def analyse(x: np.ndarray, silence_db: float, min_silence: float) -> dict:
     clipped = int((np.abs(x) >= 0.999).sum())
-    mono = x.mean(axis=1)
+    # Combine channel energies, not amplitudes: opposite polarity is not silence.
+    energy = np.mean(x.astype(np.float64) ** 2, axis=1)
     hop = int(SR * WIN)
-    n = mono.size // hop
-    frames = mono[: n * hop].reshape(n, hop)
-    rms = np.sqrt((frames ** 2).mean(axis=1) + 1e-12)
+    n = energy.size // hop
+    frames = energy[: n * hop].reshape(n, hop)
+    rms = np.sqrt(frames.mean(axis=1) + 1e-12)
     db = 20 * np.log10(rms)
 
     silences, start = [], None
@@ -75,7 +77,9 @@ def analyse(x: np.ndarray, silence_db: float, min_silence: float) -> dict:
             onsets.append(round(i * WIN, 3))
 
     return {"clipped_samples": clipped, "silences": silences, "onsets": onsets,
-            "duration": round(mono.size / SR, 3)}
+            "duration": round(len(x) / SR, 3),
+            "max_abs_sample": float(np.max(np.abs(x))) if x.size else 0.0,
+            "analysis": {"silence_db": silence_db, "min_silence": min_silence, "window_seconds": WIN}}
 
 
 def check(path: Path, silence_db: float = -50.0, min_silence: float = 0.25) -> dict:

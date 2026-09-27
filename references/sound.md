@@ -1,66 +1,45 @@
 # Sound
 
-Sound is an editorial decision, not a layer added at the end. Choose the track early and cut the picture to it, not the other way round.
+Sound is an editorial decision. Choose the order that fits the film:
 
-## Lead: what gets timed first
-
-| Lead | Order |
+| Lead | Approach |
 |---|---|
-| `music` | Pick the track. Map its phrases, energy and key moments. Time the shots to it. |
-| `narration` | Lock the spoken argument and its pauses. Time the picture and music around the VO. |
-| `visual` | Lock the key action or reveal. Build the sound around it. |
+| Music | Select the track or compose a phrase, then time the picture around its energy. |
+| Narration | Establish the argument and spoken pauses, then fit image and music. |
+| Visual | Establish the action or reveal, then build sound around it. |
 
-Beat alignment is available, not required. On calm music a beat tracker imposes a metronome that is not there, so pace by phrase and energy instead.
+No music bed, narration, sound effect, paid provider or API key is required. Use supplied audio, original recordings/compositions, licensed libraries, local tools, or an available generation provider. In a HyperFrames environment, media-use may help if installed. Otherwise use an available workflow; do not demand that integration or ElevenLabs. Record source, licence/permission and required credits for every asset.
 
-## Choosing music
+## Editorial choices
 
-Tempo alone does not prevent plodding music. Judge four things:
+Choose music by phrase structure, energy, instrumentation, relevance and ending. Tempo alone does not establish mood or quality; no genre is inherently inappropriate. Map beats only when useful. Deliberate silence, ambience, fades and an abrupt expressive stop are valid choices. Avoid unintended clicks, clipped tails, duplication or gaps.
 
-- **Phrase structure:** where it lifts, where it breathes, how long the phrases are.
-- **Energy:** does it build to the film's key moment?
-- **Instrumentation:** does it fit the brand? Leo names the usual way a premium film stops feeling premium: people "experiment with too much effects, add unnecessary sound effects and rap music" ([Leo, "Make your product videos look expensive"](https://x.com/leomeethewoo/status/2103529310208606701)).
-- **Ending:** a real ending, not a fade because the track ran out.
+Distinguish **silence** (the whole mix falls below a declared analysis threshold) from a **dropout** (for example, music stops while ambience continues). Do not declare a dropout as a measured silence. Set silence length and re-entry for the scene, not a fixed frame recipe.
 
-Leo's tempo bands are a starting suggestion: 60–80 BPM regal and cinematic; 90–110 smooth and effortless; 115–123 kinetic and sophisticated; above that, drive and hype.
+Listen to the exported mix when possible. A cue list or assembly log can help diagnose a problem but cannot establish what the file sounds like. If listening is unavailable, leave speech intelligibility and subjective sound review unresolved and report that limitation.
 
-Record provenance and credits for every track in the score (`music.provenance`) and in the delivery.
+## Mixing
 
-## Sound effects
+Use the renderer's audio tools or an external mix. HyperFrames audio skills are optional; Remotion and Blender do not have to use FFmpeg if another working mix already exists.
 
-- Each effect needs a job: a physical action or a meaningful boundary. Write the job in the score.
-- When the mix is done, listen through (or read the cue list) and remove anything too loud, out of place, or not helping the viewer understand.
-- Keep tails. Never use an abrupt gate that clicks.
+This FFmpeg example ducks music under narration. Values are illustrative; use the chosen delivery spec and measure the final encode. Set `film_duration` from the score, so a short mix cannot truncate the picture:
 
-## Silence
-
-Silence is a beat, not a gap.
-
-- Drop the bed a beat *before* a reveal, not on it. Hold for 12–25 frames. Bring the bed back over 4–8 frames at or below its previous level.
-- Keep low ambience under "silence". True digital silence reads as broken audio.
-- Good places: after the hook, before a reveal, before the CTA. Not at the very top, since autoplay often starts muted.
-- Declare every planned silence in `score.events` so it is checked, and so it is not flagged as a gap.
-
-## Mix
-
-- **HyperFrames:** `/hyperframes-audio` (ducking, voiceover carve, effect chains).
-- **Remotion and Blender:** ffmpeg after the render.
-
-```
-# duck music under VO, then normalise to the delivery spec
+```sh
+film_duration=30
 ffmpeg -i music.wav -i vo.wav -filter_complex \
-  "[0:a][1:a]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=300[m];[m][1:a]amix=inputs=2:normalize=0,loudnorm=I=-14:TP=-1:LRA=11" \
-  mix.wav
-ffmpeg -i picture.mp4 -i mix.wav -map 0:v -map 1:a -c:v copy -c:a aac -b:a 192k -shortest final.mp4
+  "[0:a]apad,atrim=duration=${film_duration}[music];[1:a]apad,atrim=duration=${film_duration},asplit=2[side][voice];[music][side]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=300[m];[m][voice]amix=inputs=2:normalize=0,apad,atrim=duration=${film_duration},loudnorm=I=-14:TP=-1:LRA=11[a]" \
+  -map '[a]' mix.wav
+ffmpeg -i picture.mp4 -i mix.wav -filter_complex \
+  "[1:a]apad,atrim=duration=${film_duration}[a]" \
+  -map 0:v -map '[a]' -c:v copy -c:a aac -b:a 192k final.mp4
 ```
 
-VO and SFX sources: `/media-use` in HyperFrames projects, or ElevenLabs, or your own recordings.
+Verify that the picture itself has the planned duration. Do not use `-shortest` to hide a short audio stream. A deliberately silent export can omit the audio stream altogether.
 
 ## Integrity
 
-These findings can block delivery:
-
-- Clipping: any sample at full scale.
-- Loudness outside the delivery target (default −14 LUFS integrated ±1, true peak ≤ −1 dBTP). Streaming, broadcast and keynote targets differ, so set the target in `score.delivery`. A deliberately silent film is not a loudness failure.
-- Unplanned gaps: silences not declared in `score.events` (`needs_review`).
-- Repeated or doubled clips. No script measures this. Read the audio timeline or the assembly log.
-- Unintelligible required speech.
+- An explicitly selected loudness/true-peak specification can block delivery when missed. Without explicit targets, −14 LUFS ±1 and −1 dBTP are suggestions only.
+- Samples near full scale trigger inspection; they do not prove waveform clipping.
+- No gated loudness can mean silence, very quiet audio or an analysis failure. Only a declared silent film is automatically exempt; an unexpectedly zero-valued programme fails and uncertain measurements need review.
+- Silence detection uses channel energies, a default −50 dB threshold, 0.25-second minimum and 20 ms windows. Configure `score.audio_analysis` for a different material. Both planned start and end are checked with the event tolerance plus analysis-window allowance; uncertain matches need inspection.
+- Repeats and required speech need rendered-audio inspection. Do not mark them passed because the plan looks correct.

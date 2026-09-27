@@ -1,135 +1,94 @@
 ---
 name: motion-design
 description: >
-  Plan a video before it is built and review the render after, the way a creative
-  director, motion designer and copywriter would. Use when the user wants a promo,
-  launch film, brand film, explainer, social clip or title sequence made in code
-  (HyperFrames, Remotion or Blender), says "direct this video", "plan the video",
-  "treatment", "storyboard this", "review this render", "why does this video look
-  generated", "make it less AI", or wants an existing render critiqued against a
-  brief. It writes the treatment, evidence ledger and timed score, hands them to
-  the renderer, and reviews style frames, an animatic and the final render with
-  scripts plus frame inspection. It does not render; the renderer skill does
-  (/hyperframes, Remotion, Blender). Not for UI micro-interactions, Lottie/Rive
-  assets, character animation or AI video generators.
+  Plan a code-rendered video or review an existing render against its brief.
+  Use for treatments, storyboards, promos, explainers and motion-design critique.
+  Writes a treatment, evidence ledger and timed score; hands off to the chosen
+  renderer; reviews style frames, moving drafts and final output. Does not render
+  or impose a house style. Not for UI micro-interactions or character animation.
 license: MIT
 ---
 
 # motion-design
 
-You direct. The renderer builds. Your job is to decide what the film says, how it feels and what it refuses to do, write those decisions down, and then hold the render to them.
+Decide what the film should communicate, give the renderer a usable plan, and review the result. The treatment and brand set the visual language. This skill supplies decision prompts and verification, not a compulsory aesthetic.
 
-You are already good at craft. This skill does not give you a house style. The film's own treatment and references set the style. Two briefs with different references should give two different films. The numbers in `references/defaults.md` are defaults; override any of them in the score with one line and a reason.
+## Start with the requested operation
 
-`SKILL_DIR` is this skill's directory. Work in the project folder:
+- **Planning:** read existing positioning, brand and brief first. No renderer, Python package or audio service is needed.
+- **Building with a renderer:** hand off the plan using the relevant adapter. Check only that renderer's requirements. An installed sibling skill is useful, not a requirement for planning or critique.
+- **Reviewing existing work:** use its existing plan. Do not restart intake or require a new treatment merely to critique a film. If there is no timed plan, give a qualitative review and identify which fidelity checks cannot run.
+
+For automated review setup, read `references/dependencies.md`. Missing review tools do not prevent planning. Report only the affected operation and available fallback; do not introduce a generic approval stop.
+
+`SKILL_DIR` means this directory. A new full project normally uses:
 
 ```
-plan/        treatment.md  evidence.json  score.json   (the contract)
-renders/     style/<beat-id>.png  animatic.mp4  final.mp4
-review/      <stage>-r<n>/critique.json + contact sheets + motion strip
+plan/       treatment.md  evidence.json  score.json
+renders/    style/<beat-id>.png  animatic.mp4  final.mp4
+review/     <stage>-r<n>/critique.json + extracted frames + contact sheets + strip.png
 DELIVERY.md
 ```
 
-**The rule that makes this work:** each step writes a file, and the next step does not start without it. Do not skip a review because the render "looks fine". A review you did not run is a review you cannot report.
+Reuse an existing project structure when practical. Never report a review that was not performed.
 
 ## 1. Intake
 
-First, check that the tools are there: `ffmpeg -version`, `python3 -c "import numpy, PIL"`, and the renderer's CLI. If any are missing, tell the user before doing anything else.
+Ask only material questions the supplied context does not answer:
 
-Then read what already exists: a positioning doc, a brand system (`DESIGN.md`, tokens), an existing brief, the product itself. Then ask only what those do not answer. Ask in one message, conversationally:
+1. Who watches, and where?
+2. What should they remember and do next?
+3. What should they feel, or how should that feeling develop?
+4. What should the film avoid showing or claiming?
 
-1. Who watches this, and where? (feed, launch page, keynote, phone, sound on or off)
-2. What should they remember, and what should they do next?
-3. What should they feel? One word, or a short progression ("intrigue → recognition → confidence").
-4. What will this video not do or show?
+Resolve brand source, format, duration and delivery requirements from context where possible. Record reasonable assumptions and continue within the user's authorization. Suggest positioning work only when uncertainty about the product genuinely prevents a useful film.
 
-Also confirm: the brand source, the renderer, the aspect ratios, the length, and the delivery spec.
+Choose review depth by complexity and uncertainty, not a duration cutoff. A simple clip may need only a treatment, score, representative style frames and final review. A short but intricate sequence may need an animatic. Record the chosen path briefly.
 
-If the user says "just go", answer the four questions yourself from what you read. Write your answers in the treatment and mark them as assumed.
+## 2. Treatment and evidence
 
-Do not start a positioning exercise. If the positioning itself is unresolved, say so and suggest fixing that first.
+Use `references/treatment.md`. Establish the proposition, audience, emotional arc, ending, brand boundaries and delivery requirements. Consider different concepts or named references when they resolve a real creative question; do not manufacture a quota of either. A small motion vocabulary can help, but it need not classify every animation.
 
-**Sizing.** A clip under 20 s uses the light path: treatment, score, style frames, final review. A longer film uses every step.
+Use `references/evidence.md` for factual claims, inferences and visual metaphors. A source field is not proof. Keep claim wording and its limits tied to actual supporting evidence.
 
-## 2. Treatment → `plan/treatment.md`
+## 3. Timed score
 
-Use `references/treatment.md`. The fields that matter most:
+Use `references/score.md`, with `references/copy.md`, `references/motion.md` and `references/sound.md` as relevant. Select a music-, narration- or visual-led approach. No audio provider or soundtrack is mandatory.
 
-- **Proposition.** One sentence. If it contains "and", pick one.
-- **Tellings considered.** Write at least two structurally different concepts, and one line on why you chose this one. Your first idea is usually the average of every video in its category.
-- **Refusal.** At least one thing the film will not show or claim.
-- **Last beat.** Write it first. If you cannot write it, you do not have a film yet.
-- **References.** 2–4 named, real works. For each: what to take, and what not to take. Do not describe the look with adjectives when a reference could show it.
-- **Motion vocabulary.** 2–4 verbs this film uses, each with its meaning (for example: Inspect, Align, Resolve). Every animated beat uses one of them.
-- **Lead.** `music`, `narration` or `visual`. This decides what gets timed first (see `references/sound.md`).
+Plan each beat's job, focal element, readable text intervals, movement, transitions and sound. Record mandatory commitments separately from creative intentions. Holds keep essential information readable; they do not automatically freeze the scene.
 
-Then write `plan/evidence.json` (`references/evidence.md`). Every claim is typed `fact`, `inference` or `metaphor`. A metaphor may be unprovable. It must never be presented as a fact.
+Present the proposition, ending and beat table. Continue within existing authorization. Pause only for a material unanswered decision or a user-requested approval gate.
 
-## 3. Score → `plan/score.json`
+## 4. Handoff and progressive review
 
-First read `references/copy.md` for on-screen text and VO, and `references/motion.md` for the beat design. Then use `references/score.md`. It is the timed plan in seconds, so any renderer can use it. For each beat, give:
+Read only the chosen adapter in `adapters/`. Preserve the plan's actual commitments; implementation choices belong to the renderer. Meaningful changes to approved timing, copy or commitments get a short amendment and a new review, rather than silently rewriting the target.
 
-- its job (what the viewer learns)
-- the evidence it relies on
-- on-screen text and its reading hold
-- voiceover
-- the focal element
-- the verb
-- build and hold
-- the transition in
-- the sound
-- any mandatory commitments.
+For the full path:
 
-List detectable events (hard cuts, silences, hits) in `events[]`. Fidelity is checked against them.
+| Stage | Inspect |
+|---|---|
+| Style frames | Brand, composition, focus and legibility at intended viewing size |
+| Moving draft with representative audio | Timing, continuity, holds, transitions and sound |
+| Final export | Actual picture and audio, delivery requirements and fidelity |
 
-Show the user the proposition, the last beat and a beat table. This is the cheap place to change the film. Wait for approval. If the user said to go ahead without stopping, show the plan and continue.
-
-## 4. Hand off
-
-Read the adapter for the renderer: `adapters/hyperframes.md`, `adapters/remotion.md` or `adapters/blender.md`. Give the renderer the treatment and the score as the contract. The renderer decides how to build, but it must not change what the plan says. To change the plan, record an amendment (see the budget rule in Step 5).
-
-## 5. Review
-
-There are three stages. Each stage gets its own review folder.
-
-| Stage | Render | Review for |
-|---|---|---|
-| `style_frames` | one still per beat at final size → `renders/style/<beat-id>.png` | look, brand, one focal point, legibility at viewing size |
-| `animatic` | low-res, no polish, with the real audio | timing, cuts, holds, sound continuity |
-| `final` | delivery quality | everything, including loudness and evidence |
-
-Run:
+Use these commands for the stages selected:
 
 ```
-python3 SKILL_DIR/scripts/check.py --plan plan --stills renders/style --stage style_frames --out review/style_frames-r1
+python3 SKILL_DIR/scripts/check.py --plan plan --stills renders/style --stage style_frames --out review/style-r1
 python3 SKILL_DIR/scripts/check.py --plan plan --video renders/animatic.mp4 --stage animatic --out review/animatic-r1
 python3 SKILL_DIR/scripts/check.py --plan plan --video renders/final.mp4 --stage final --round 1 --out review/final-r1
 ```
 
-`check.py` measures what it can and writes `critique.json`. It also lists the `needs_review` items only eyes can settle. Then:
+Read `references/review.md`. Inspect individual frames as well as contact sheets, and moving footage for temporal judgments. Listen to the exported audio when available. If playback/listening is unavailable, record the limitation and leave that judgment unresolved; a timeline or cue list is not equivalent.
 
-1. Open the contact sheets (`contact.png`, and `contact-<width>px.png` at viewing width) and `strip.png`. Look at them. Do not reason from the JSON alone.
-2. For every `needs_review` finding, set `pass` or `fail` and write what you saw in `evidence`. If you truly cannot tell, leave it as `needs_review` and add it to `unresolved`.
-3. Fix blocking failures first, then the advice you agree with. Re-render and re-run `check.py` with the next round number.
+Keep original script findings. Record reviewer decisions using `scripts/resolve.py`, which preserves the observation and refreshes counts. The renderer reads the current `critique.json`, not a chat paraphrase. Fix confirmed blocking problems first; craft suggestions are optional. No written exception is needed for every deliberate aesthetic choice.
 
-What blocks and what only advises is in `references/review.md`. In short: integrity, communication, evidence, sound integrity and fidelity to the plan can block delivery. Craft defaults never block.
+## 5. Revision and delivery
 
-**Budget.** At most two revision rounds on the final. When the budget is used up, stop and deliver with the open findings listed. Do not declare success. Do not edit the plan to make a failed fidelity check disappear. A real plan change is an amendment: edit the plan, add a dated line under `## Amendments` in the treatment with the reason, and review again.
-
-## 6. Deliver
+Default budget: up to two final revision rounds, unless the user requests otherwise. At the budget, deliver with open findings listed; do not label an unresolved film successful. A new render or plan invalidates the previous review receipt.
 
 ```
-python3 SKILL_DIR/scripts/deliver.py --plan plan --video renders/final.mp4 --critique review/final-r<n>/critique.json --out DELIVERY.md
+python3 SKILL_DIR/scripts/deliver.py --plan plan --video renders/final.mp4 --critique review/final-r1/critique.json --out DELIVERY.md
 ```
 
-`<n>` is the latest round. The script exits non-zero if the critique was made on another file or an older plan, or if blocking findings are open. Tell the user what it says. Give them:
-
-- the render
-- `DELIVERY.md`
-- the open findings, in plain words.
-
-Never call the film "professional" or "polished". Say what was checked and what was not.
-
-## Requirements
-
-ffmpeg and ffprobe on PATH, and Python 3 with numpy and Pillow. The optional beat grid for music-led films uses HyperFrames' `analyze-beatgrid.py` (Apache-2.0), which needs librosa. Without it, put cue points in the score by hand.
+The report exits non-zero when blocking findings remain or the plan/render hashes do not match. It still writes a report for honest delivery with limitations. Give the user the render and report, explaining material open findings. Describe observed results rather than asserting a professional-quality score.

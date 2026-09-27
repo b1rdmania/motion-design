@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import audio_check  # noqa: E402
 import frames as frames_mod  # noqa: E402
 import motion_strip  # noqa: E402
-from _common import load_json, plan_version, probe, run, sha256_file, write_json  # noqa: E402
+from _common import load_json, plan_version, probe, run, sha256_file, write_json, transition, text_cues, review_summary  # noqa: E402
 
 REF = {
     "integrity": "references/review.md#artifact-integrity",
@@ -56,15 +56,15 @@ STOCK = [
 class Review:
     def __init__(self, score: dict, overrides: dict):
         self.findings: list[dict] = []
-        self.overridden: list[dict] = []
+        self.overridden: list[dict] = [{"rule": k, "reason": v} for k, v in overrides.items()]
         self.score = score
         self.overrides = overrides
 
-    def add(self, rule: str, status: str, blocking: bool, *, beat=None, t=None, evidence=None, fix=None):
+    def add(self, rule: str, status: str, blocking: bool, *, beat=None, t=None, evidence=None, fix=None, method="measurement"):
         if rule in self.overrides and rule.startswith("default."):
-            self.overridden.append({"rule": rule, "reason": self.overrides[rule], "beat": beat})
             return
         self.findings.append({
+            "id": f"f{len(self.findings) + 1:04d}", "method": method,
             "rule": rule, "source": REF[rule.split(".")[0]], "status": status, "blocking": blocking,
             "beat": beat, "t": None if t is None else round(float(t), 3),
             "evidence": evidence, "fix": fix,
@@ -72,15 +72,14 @@ class Review:
 
 
 def text_of(b: dict) -> tuple[str, str]:
-    sup = b.get("super") or {}
-    return (sup.get("text", "") if isinstance(sup, dict) else str(sup)), (b.get("vo") or "")
+    return " ".join(c.get("text", "") for c in text_cues(b)), (b.get("vo") or "")
 
 
 def expected_events(score: dict) -> list[dict]:
     events = [dict(e) for e in score.get("events", [])]
     have = {(e["type"], round(float(e["t"]), 2)) for e in events}
     for i, b in enumerate(score.get("beats", [])):
-        if i > 0 and b.get("transition_in", "cut") == "cut" and ("cut", round(float(b["start"]), 2)) not in have:
+        if i > 0 and transition(b).get("type") == "cut" and ("cut", round(float(b["start"]), 2)) not in have:
             events.append({"type": "cut", "t": float(b["start"]), "beat": b["id"], "derived": True})
     return sorted(events, key=lambda e: float(e["t"]))
 
@@ -99,7 +98,8 @@ def integrity(r: Review, video: Path, info: dict, delivery: dict, fps: float, st
         r.add("integrity.decode", "fail", True, evidence=info.get("error", "no video stream"),
               fix="re-render; the file does not decode")
         return False
-    errs = run(["ffmpeg", "-v", "error", "-i", str(video), "-f", "null", "-"], check=False).stderr.strip()
+    decoded = run(["ffmpeg", "-v", "error", "-i", str(video), "-f", "null", "-"], check=False)
+    errs = decoded.stderr.strip() or (f"decoder exit {decoded.returncode}" if decoded.returncode else "")
     r.add("integrity.decode", "fail" if errs else "pass", True, evidence=errs[:500] or "full decode clean",
           fix="re-render; decoder reported errors" if errs else None)
 
@@ -159,24 +159,35 @@ def communication(r: Review, stage: str, sheet: str | None):
         r.add("communication.text", "not_applicable", True, evidence="no supers or VO in the score")
         return
     for b, sup, vo in supers:
-        if not sup:
-            continue
-        chars = len(sup.replace("\n", " ").strip())
-        sd = b.get("super") if isinstance(b.get("super"), dict) else {}
-        build = float((b.get("motion") or {}).get("build", 0) or 0)
-        hold = float(sd.get("hold") or (b["dur"] - build))
-        cps = chars / hold if hold > 0 else float("inf")
-        r.add("communication.reading_time", "fail" if cps > 25 else "pass", True, beat=b["id"], t=b["start"],
-              evidence=f"{chars} chars held {hold:.2f}s = {cps:.1f} cps (hard limit 25)",
-              fix=f"hold at least {chars / 25:.2f}s or cut words" if cps > 25 else None)
-        if stage != "animatic":
-            r.add("communication.legible_at_view", "needs_review", True, beat=b["id"], t=b["start"],
-                  evidence=f"read '{sup}' on {sheet or 'the contact sheet'}",
-                  fix="judge size, contrast and hierarchy at the intended viewing width")
+        for cue in text_cues(b):
+            text = cue.get("text", "")
+            if not text:
+                continue
+            chars = len(text.replace("\n", " ").strip())
+            hold = float(cue.get("hold", 0))
+            cps = chars / hold if hold > 0 else float("inf")
+            limit = r.score.get("delivery", {}).get("max_text_cps")
+            explicit = limit is not None
+            threshold = float(limit) if explicit else 25
+            status = ("fail" if explicit else "needs_review") if cps > threshold else "pass"
+            t = b["start"] + float(cue.get("start", 0))
+            r.add("communication.reading_time_plan", status, explicit, beat=b["id"], t=t, method="plan",
+                  evidence=f"Plan only: {chars} chars / {hold:.2f}s = {cps:.1f} cps; "
+                           + (f"required maximum {threshold}" if explicit else "25 cps review trigger"),
+                  fix="verify the actual reading interval; adjust for audience and text complexity")
+            if stage != "animatic":
+                r.add("communication.legible_at_view", "needs_review", True, beat=b["id"], t=t,
+                      method="inspection", evidence=f"expected '{text}'; see {sheet}",
+                      fix="inspect individual frames at intended viewing width, not a scaled-down sheet")
+            if stage != "style_frames":
+                r.add("communication.rendered_text", "needs_review", True, beat=b["id"], t=t,
+                      method="inspection", evidence=f"expected '{text}' readable for {hold:.2f}s from {t:.3f}s",
+                      fix="verify actual text, appearance/disappearance times and readable hold in the video")
+
     if any(v for _, _, v in supers) and stage != "style_frames":
         r.add("communication.speech", "needs_review", True,
               evidence="speech intelligibility is not measured by script",
-              fix="check VO level against the music bed (ducking) and the TTS render for slurred words")
+              method="inspection", fix="listen to the exported speech; if listening is unavailable, leave unresolved")
 
 
 # ------------------------------------------------------------------ evidence
@@ -184,19 +195,24 @@ def communication(r: Review, stage: str, sheet: str | None):
 def evidence(r: Review, ledger: dict):
     claims = {c["id"]: c for c in ledger.get("claims", [])}
     beats = r.score.get("beats", [])
-    touched = False
     for c in claims.values():
         if c.get("type") == "fact" and not (c.get("source") and c.get("evidence")):
-            touched = True
             r.add("evidence.fact_supported", "fail", True, evidence=f"claim {c['id']} has no source or evidence",
-                  fix="add the source and the supporting excerpt, or downgrade it to inference")
+                  method="plan", fix="support the claim or change/remove it; relabelling alone does not supply evidence")
+    for c in claims.values():
+        if c.get("type") in ("fact", "inference"):
+            r.add("evidence.source_support", "needs_review", True, method="inspection",
+                  evidence=f"claim {c['id']}: {c.get('source', 'no source')} / {c.get('evidence', 'no evidence')}",
+                  fix="check that the actual source supports the wording and scope, not just that fields exist")
     for b in beats:
         sup, vo = text_of(b)
+        r.add("evidence.coverage", "needs_review", True, beat=b["id"], t=b["start"], method="inspection",
+              evidence=f"planned text/VO: {sup} {vo}; visual job: {b.get('job', '')}",
+              fix="compare rendered words, speech and implied claims with the ledger; record when no claims apply")
         words = f"{sup} {vo}".strip()
         pid = b.get("proves")
         ids = pid if isinstance(pid, list) else ([pid] if pid else [])
         for i in ids:
-            touched = True
             if i not in claims:
                 r.add("evidence.claim_exists", "fail", True, beat=b["id"], t=b["start"],
                       evidence=f"beat proves '{i}', which is not in evidence.json", fix="add the claim or remove it")
@@ -214,18 +230,17 @@ def evidence(r: Review, ledger: dict):
         if ids:
             continue
         if DIGITS.search(words):
-            touched = True
-            r.add("evidence.number_anchored", "fail", True, beat=b["id"], t=b["start"],
+            r.add("evidence.number_anchored", "needs_review", True, beat=b["id"], t=b["start"],
                   evidence=f"'{words}' contains a number and no evidence id",
-                  fix="add a claim to evidence.json and set beat.proves")
+                  method="heuristic", fix="distinguish quantity claims from labels/version numbers; source claims only")
         elif NUMBER_WORDS.search(words):
-            touched = True
             r.add("evidence.number_anchored", "needs_review", True, beat=b["id"], t=b["start"],
                   evidence=f"'{words}' may state a quantity ('{NUMBER_WORDS.search(words).group(0)}') "
                            "and has no evidence id",
                   fix="if it is a quantity claim, add it to evidence.json; if not, mark pass")
-    if not touched:
-        r.add("evidence.claims", "not_applicable", True, evidence="no claims or numbers in the film")
+    if not beats and not claims:
+        r.add("evidence.claims", "needs_review", True, method="inspection",
+              evidence="empty plan/ledger does not establish that the render makes no claims")
 
 
 # --------------------------------------------------------------------- sound
@@ -233,24 +248,35 @@ def evidence(r: Review, ledger: dict):
 def sound(r: Review, audio: dict, delivery: dict, events: list[dict], stage: str):
     if not audio.get("has_audio"):
         return
-    r.add("sound.clipping", "fail" if audio["clipped_samples"] else "pass", True,
-          evidence=f"{audio['clipped_samples']} samples at full scale",
-          fix="lower the master or add a true-peak limiter" if audio["clipped_samples"] else None)
+    r.add("sound.clipping", "needs_review" if audio["clipped_samples"] else "pass", True,
+          evidence=f"{audio['clipped_samples']} samples near full scale (not proof of clipping)",
+          method="heuristic", fix="inspect waveform/peak measurements for clipping" if audio["clipped_samples"] else None)
     target = float(delivery.get("loudness_lufs", -14))
     tol = float(delivery.get("loudness_tolerance", 1))
     tp_max = float(delivery.get("true_peak_dbtp", -1))
     lufs, tp = audio.get("integrated_lufs"), audio.get("true_peak_dbtp")
     if stage == "final":
+        intentional_silence = delivery.get("audio") is False
+        if audio.get("measurement_error"):
+            r.add("sound.measurement", "needs_review", True, evidence=audio["measurement_error"],
+                  fix="repair or repeat measurement; do not infer silence from an analysis failure")
         if lufs is None:
-            r.add("sound.loudness", "not_applicable", True, evidence="no gated programme loudness (intended silence)")
+            status = "not_applicable" if intentional_silence else (
+                "fail" if audio.get("max_abs_sample") == 0 and not audio.get("measurement_error") else "needs_review")
+            r.add("sound.loudness", status, True,
+                  evidence="silence explicitly planned" if intentional_silence else "no programme loudness despite planned/unspecified sound",
+                  fix=None if intentional_silence else "check the exported audio and measurement before delivery")
         else:
+            explicit = "loudness_lufs" in delivery
             ok = abs(lufs - target) <= tol
-            r.add("sound.loudness", "pass" if ok else "fail", True,
-                  evidence=f"{lufs} LUFS integrated; target {target} ±{tol}",
-                  fix=None if ok else f"loudnorm to I={target}:TP={tp_max}")
+            r.add("sound.loudness", "pass" if ok else ("fail" if explicit else "needs_review"), explicit,
+                  evidence=f"{lufs} LUFS; {'required' if explicit else 'suggested'} target {target} ±{tol}")
         if tp is not None:
-            r.add("sound.true_peak", "pass" if tp <= tp_max else "fail", True,
-                  evidence=f"{tp} dBTP; maximum {tp_max}")
+            explicit = "true_peak_dbtp" in delivery
+            r.add("sound.true_peak", "pass" if tp <= tp_max else ("fail" if explicit else "needs_review"), explicit,
+                  evidence=f"{tp} dBTP; {'required' if explicit else 'suggested'} maximum {tp_max}")
+        elif not intentional_silence:
+            r.add("sound.true_peak", "needs_review", True, evidence="true-peak measurement unavailable")
     tol_s = 2.0 / float(r.score.get("fps", 24)) + 0.04
     declared = [e for e in events if e["type"] == "silence"]
     for s in audio.get("silences", []):
@@ -263,7 +289,7 @@ def sound(r: Review, audio: dict, delivery: dict, events: list[dict], stage: str
     if stage != "style_frames":
         r.add("sound.repeats", "needs_review", True,
               evidence="repeated or doubled audio is not measured by script",
-              fix="read the audio timeline or assembly log for clips placed twice or overlapping tails")
+              method="inspection", fix="listen to the export for unintended repeats; timeline/log inspection is supplementary, not a listening substitute")
 
 
 # ------------------------------------------------------------------ fidelity
@@ -274,19 +300,25 @@ def fidelity(r: Review, strip: dict, audio: dict, events: list[dict], stage: str
     cuts = [c["t"] for c in strip.get("cuts", [])]
     for e in events:
         t, kind = float(e["t"]), e["type"]
+        tol = float(e.get("tolerance_frames", 2)) / fps
         beat = e.get("beat") or beat_at(r.score, t)
         if kind == "cut":
             near = min((abs(c - t) for c in cuts), default=None)
             ok = near is not None and near <= tol + 1e-6
-            r.add("fidelity.cut", "pass" if ok else "fail", True, beat=beat, t=t,
+            r.add("fidelity.cut", "pass" if ok else "needs_review", True, beat=beat, t=t,
                   evidence=f"nearest detected cut {near:.3f}s away" if near is not None else "no cuts detected",
-                  fix=None if ok else "the cut is missing or off by more than 2 frames")
+                  method="heuristic", fix=None if ok else "inspect the edit: detector may miss a cut; compare renderer timing and actual frames")
         elif kind == "silence" and audio.get("has_audio"):
-            near = min((abs(s["start"] - t) for s in audio.get("silences", [])), default=None)
-            ok = near is not None and near <= tol + 0.04
-            r.add("fidelity.silence", "pass" if ok else "fail", True, beat=beat, t=t,
-                  evidence=f"nearest detected silence starts {near:.3f}s away" if near is not None
-                  else "no silence detected", fix=None if ok else "the planned silence is missing or late")
+            candidates = audio.get("silences", [])
+            found = min(candidates, key=lambda s: abs(s["start"] - t), default=None)
+            end = t + float(e.get("dur", 0))
+            allowance = tol + float(audio.get("analysis", {}).get("window_seconds", 0.02)) * 2
+            ok = (found is not None and float(e.get("dur", 0)) > 0
+                  and abs(found["start"] - t) <= allowance
+                  and abs(found["end"] - end) <= allowance)
+            r.add("fidelity.silence", "pass" if ok else "needs_review", True, beat=beat, t=t,
+                  method="heuristic", evidence=f"planned {t:.3f}–{end:.3f}s; nearest detected {found}; tolerance {allowance:.3f}s",
+                  fix=None if ok else "check both boundaries, threshold and whether this is a dropout with ambience rather than silence")
         elif kind == "hit" and audio.get("has_audio"):
             near = min((abs(o - t) for o in audio.get("onsets", [])), default=None)
             ok = near is not None and near <= tol + 0.02
@@ -315,62 +347,47 @@ def commitments(r: Review, stage: str):
     for b in r.score.get("beats", []):
         for c in b.get("commitments", []):
             r.add("fidelity.commitment", "needs_review", True, beat=b["id"], t=b["start"],
-                  evidence=f"mandatory: {c}", fix="confirm it is present and exact in the frame")
+                  method="inspection", evidence=f"mandatory: {c}", fix="confirm it is present and exact in the frame")
 
 
 # ------------------------------------------------------------------ defaults
 
 def defaults(r: Review, audiomap: dict | None, events: list[dict]):
+    """Uncalibrated prompts, not rules. Rhythm metrics are opt-in."""
     beats = r.score.get("beats", [])
-    fps = float(r.score.get("fps", 24))
+    hints = set(r.score.get("review_hints", []))
     for b in beats:
-        m = b.get("motion") or {}
-        build, hold = float(m.get("build", 0) or 0), float(m.get("hold", 0) or 0)
-        if build and hold and hold < build:
-            r.add("default.hold_ge_build", "fail", False, beat=b["id"], t=b["start"],
-                  evidence=f"build {build}s, hold {hold}s", fix="hold at least as long as the build, or override")
-        if b["dur"] < 1 and build > 0:
-            r.add("default.no_short_animation", "fail", False, beat=b["id"], t=b["start"],
-                  evidence=f"{b['dur']}s beat animates for {build}s", fix="hard cut to the resolved state")
-        sup, vo = text_of(b)
-        if sup:
-            sd = b.get("super") if isinstance(b.get("super"), dict) else {}
-            h = float(sd.get("hold") or (b["dur"] - build))
-            chars = len(sup.replace("\n", " ").strip())
-            if h > 0 and chars / h > 17:
-                r.add("default.super_speed", "fail", False, beat=b["id"], t=b["start"],
-                      evidence=f"{chars / h:.1f} cps (default ≤ 17)")
-            lines = sup.split("\n")
-            if len(lines) > 2 or max(len(x) for x in lines) > 42:
-                r.add("default.super_shape", "fail", False, beat=b["id"], t=b["start"],
-                      evidence=f"{len(lines)} lines, longest {max(len(x) for x in lines)} chars (default ≤ 2, ≤ 42)")
-        for pat in STOCK:
-            for field in (sup, vo):
+        for cue in text_cues(b):
+            text, hold = cue.get("text", ""), float(cue.get("hold", 0))
+            if text and hold > 0 and len(text) / hold > 17:
+                r.add("default.super_speed", "needs_review", False, beat=b["id"], t=b["start"], method="plan",
+                      evidence=f"planned {len(text) / hold:.1f} cps; 17 is an uncalibrated prompt, not a limit",
+                      fix="check reading effort at intended size; retain deliberate fast text if it works")
+        for field in text_of(b):
+            for pat in STOCK:
                 if field and re.search(pat, field, re.I):
-                    r.add("default.stock_copy", "fail", False, beat=b["id"], t=b["start"],
-                          evidence=f"'{field}' matches /{pat}/", fix="say the specific thing instead")
-    if len(beats) >= 3:
+                    r.add("default.stock_copy", "needs_review", False, beat=b["id"], t=b["start"], method="plan",
+                          evidence=f"'{field}' matches /{pat}/", fix="does this wording serve this film? Keep it if it does")
+    if "default.pace_varies" in hints and len(beats) >= 3:
         durs = [float(b["dur"]) for b in beats]
         cv = statistics.pstdev(durs) / statistics.mean(durs)
         if cv < 0.25:
-            r.add("default.pace_varies", "fail", False, evidence=f"beat-length variation {cv:.2f} (default ≥ 0.25)",
-                  fix="vary beat lengths with their weight, or override for a deliberately even film")
+            r.add("default.pace_varies", "needs_review", False, method="plan",
+                  evidence=f"beat-length variation {cv:.2f}; rhythm quality is not measured",
+                  fix="inspect pacing; even rhythm can be intentional")
     words = sum(len(text_of(b)[1].split()) for b in beats)
     dur = float(r.score.get("duration", 0)) or 1
     if words / dur > 2.5:
-        r.add("default.vo_budget", "fail", False, evidence=f"{words} VO words in {dur:.1f}s = {words / dur:.2f}/s (default ≤ 2.5)")
-    for e in events:
-        if e["type"] == "silence" and float(e["t"]) < 0.5:
-            r.add("default.no_silence_at_top", "fail", False, t=e["t"], evidence="planned silence at the top")
+        r.add("default.vo_budget", "needs_review", False, method="plan",
+              evidence=f"{words} planned VO words in {dur:.1f}s; listen to the actual delivery")
     grid = []
     if audiomap:
-        grid = audiomap.get("beats_sec") or [p.get("start") for p in audiomap.get("phrases", []) if "start" in p]
-    if r.score.get("lead") == "music" and grid:
-        tol = 2.0 / fps
+        grid = audiomap.get("beats_sec") or [p["start"] for p in audiomap.get("phrases", []) if "start" in p]
+    if "default.cut_on_phrase" in hints and r.score.get("lead") == "music" and grid:
         for e in events:
-            if e["type"] == "cut" and not any(abs(float(e["t"]) - g) <= tol for g in grid):
-                r.add("default.cut_on_phrase", "fail", False, t=e["t"], beat=e.get("beat"),
-                      evidence="cut is more than 2 frames from any beat or phrase in the audiomap")
+            if e["type"] == "cut" and not any(abs(float(e["t"]) - g) <= 2 / r.score.get("fps", 24) for g in grid):
+                r.add("default.cut_on_phrase", "needs_review", False, method="plan", t=e["t"],
+                      evidence="cut falls outside the suggested grid; off-grid editing can be deliberate")
 
 
 # -------------------------------------------------------------------- judged
@@ -381,28 +398,22 @@ def judged(r: Review, stage: str, sheet: str | None, strip_png: str | None):
         for b in beats:
             r.add("judged.frame", "needs_review", False, beat=b["id"], t=b["start"],
                   evidence=f"job: {b.get('job', '—')} · focal: {b.get('focal', '—')} · see {sheet}",
-                  fix="Does the frame carry its job? One focal point? On brand? Does it follow a reference?")
+                  method="inspection", fix="Does attention serve the intended composition, brand and beat? References apply only when chosen.")
         r.add("judged.reskin", "needs_review", False, evidence=f"see {sheet}",
-              fix="Could these frames serve another brand with a text swap? If yes, the concept is not native.")
+              method="inspection", fix="Is this a useful subject-specific treatment or an interchangeable template? Simple title cards need not be unique.")
     if stage in ("animatic", "final"):
         for i, b in enumerate(beats):
-            tr = b.get("transition_in", "cut")
-            if i > 0 and tr != "cut":
+            tr = transition(b)
+            if i > 0 and (tr.get("type") != "cut" or tr.get("relationship")):
                 r.add("judged.transition", "needs_review", False, beat=b["id"], t=b["start"],
                       evidence=f"declared {tr}; see transition samples",
-                      fix="Does the shared property survive the boundary? A near miss reads worse than a cut.")
+                      method="inspection", fix="Does the actual edit preserve the intended relationship and reading?")
         r.add("judged.pacing", "needs_review", False, evidence=f"see {strip_png} against the feeling progression",
-              fix="Does the rhythm follow the treatment? Activity is measured; good pacing is judged.")
+              method="inspection", fix="Does the rhythm follow the treatment? Activity is measured; good pacing is judged.")
 
 
 # ---------------------------------------------------------------------- main
 
-def verdict(findings: list[dict]) -> str:
-    if any(f["blocking"] and f["status"] == "fail" for f in findings):
-        return "blocked"
-    if any(f["blocking"] and f["status"] == "needs_review" for f in findings):
-        return "open"
-    return "clear"
 
 
 def main() -> None:
@@ -457,7 +468,8 @@ def main() -> None:
             write_json(a.out / "strip.json", strip)
             motion_strip.draw(res, score, a.out / "strip.png")
             strip_png = str(a.out / "strip.png")
-            audio = audio_check.check(a.video)
+            settings = score.get("audio_analysis", {})
+            audio = audio_check.check(a.video, settings.get("silence_db", -50), settings.get("min_silence", 0.25))
             write_json(a.out / "audio.json", audio)
             samples = frames_mod.sample_times(score, a.stage, info["duration"], [])
             fdir = a.out / "frames"
@@ -485,14 +497,13 @@ def main() -> None:
     order = {"fail": 0, "needs_review": 1, "pass": 2, "not_applicable": 3}
     r.findings.sort(key=lambda f: (not f["blocking"], order[f["status"]], f["t"] if f["t"] is not None else -1))
     critique = {
+        "schema_version": 2,
         "stage": a.stage,
         "round": a.round,
         "render": str(a.video or a.stills),
         "render_sha256": render_hash,
         "plan_version": plan_version(a.plan),
-        "verdict": verdict(r.findings),
-        "counts": {s: sum(f["status"] == s for f in r.findings) for s in order},
-        "blocking_open": sum(f["blocking"] and f["status"] in ("fail", "needs_review") for f in r.findings),
+        **review_summary(r.findings),
         "calibration": "defaults are not calibrated",
         "contact_sheet": sheet,
         "strip": strip_png,

@@ -39,17 +39,12 @@ In the score, a beat names the claims it uses: `"proves": "wait-time"`, or a lis
 | `inference` | Reasoned from facts but not itself checkable | `evidence` saying what it is inferred from, and `limits` |
 | `metaphor` | A visual or verbal device | `limits`, saying what it must not be taken to mean |
 
-## What check.py does with it
+## What the checks establish
 
-- A `fact` with no source or evidence fails. This is blocking.
-- A beat whose `proves` names an unknown id fails. This is blocking.
-- Any on-screen text or VO line that contains a digit or a percent sign must name a claim, or it fails. This is blocking.
-- A line with a number word ("seven", "twice", "half") and no claim becomes `needs_review`. It might be a quantity claim or just a phrase like "one place".
-- A beat that uses a `metaphor` claim becomes `needs_review`. Check that the image and words do not present it as a fact.
-- On-screen wording that differs from `permitted_wording` becomes `needs_review`.
+- Facts missing source/evidence and references to unknown claim IDs are ledger errors.
+- Numbers without IDs trigger review, not automatic failure: a product version or chapter label is not necessarily a factual performance claim.
+- Nonnumeric and implied visual claims need review too. Every beat gets a coverage finding against the actual render.
+- Populated fact/inference records get a source-support review. Verify the source, permitted scope and rendered wording; a nonempty field is not proof.
+- Metaphors and changed wording get review prompts. Inferences need actual reasoning and limits; do not relabel an unsupported fact merely to bypass a gate.
 
-## Rules
-
-- Do not put private data on screen (addresses, names, contacts, owners) just to make a shot feel real.
-- If data is public, do not imply that it is exclusive.
-- Illustrative geometry, mock UI and sample data get their own claims, with limits saying so.
+Preserve private-source boundaries. Public data is not automatically exclusive. Label illustrative geometry, mock UI or sample data when their presentation would otherwise imply a real result. A film without factual claims can have an empty ledger, but that conclusion comes from inspecting its content, not a digit regex.

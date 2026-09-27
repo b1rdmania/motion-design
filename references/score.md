@@ -60,10 +60,21 @@
 | `beats[].job` | What the viewer learns. If you cannot write one, cut the beat. |
 | `beats[].proves` | An evidence id, a list of ids, or null |
 | `beats[].super` | `{text, hold}`. Use `\n` for a line break. `hold` is how long the full text stays readable. |
-| `beats[].motion` | `build` = seconds until the beat resolves. `hold` = seconds it stays resolved. |
-| `beats[].transition_in` | `cut`, `match:<shared property>` or `morph:<shared element>` |
+| `beats[].motion` | `build` = seconds until essential information is readable; `hold` = its readable interval. Continuing motion is allowed. Optional `ongoing` describes it. |
+| `beats[].transition_in` | An edit object `{type, relationship?, duration?}`; types include cut, dissolve, wipe, morph, continuous, custom. Legacy strings remain accepted. |
 | `beats[].commitments` | Mandatory items, for example "logo from brand/logo.svg" or "exact copy". Each one is checked by eye. |
-| `events[]` | Detectable events only: `cut`, `silence` (with `dur`) and `hit`. A beat with `transition_in: "cut"` adds a cut event automatically. |
+| `events[]` | Detectable events only: `cut`, `silence` (with `dur`) and `hit`. A beat with a cut mechanism adds a cut event automatically, including legacy `match:<property>`. Each event can set `tolerance_frames` (default 2). |
 | `overrides[]` | Defaults this film breaks on purpose, with a reason |
 
-Match cuts and morphs are not events. A scene-cut detector cannot see them, so they are reviewed by eye.
+A match cut can be instantaneous. For example, `{"type":"cut","relationship":"same circular shape"}` declares a cut to detect and a relationship to inspect. A morph need not contain a cut. Detector misses are uncertain, not proof of a timing failure.
+
+## Additional timing and review fields
+
+- `text_cues`: optional list on a beat, each `{text, start, hold}`. `start` is relative to the beat; cues can overlap or appear while the camera keeps moving. Legacy `super` is retained and can also set `start`; otherwise it starts after `motion.build`.
+- `sound.cues`: multiple sound cues are allowed; their `t` values are absolute film seconds. `events` also uses absolute film seconds. A musical dropout with ambience is a sound cue, not a measured `silence` event.
+- `delivery.max_text_cps`: optional explicit plan requirement. Without it, reading speed only prompts inspection. The checker does not observe text timing automatically.
+- `audio_analysis`: optional `{silence_db: -50, min_silence: 0.25}`. Match these to the material. Silence findings report both detected boundaries.
+- `review_hints`: optional list of rhythm prompts (`default.pace_varies`, `default.cut_on_phrase`). No rigid rhythm profile runs by default.
+- Explicit `delivery.loudness_lufs`, `loudness_tolerance` and `true_peak_dbtp` govern blocking sound limits. The example's values are illustrative, not mandatory.
+
+Keep cue times inside their beat/film and use positive holds. The example above illustrates one beat, not a complete 20-second film. Every rendered beat and mandatory text interval needs representation in a production score.

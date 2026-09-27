@@ -57,12 +57,12 @@ def test_fixture_passes_integrity_fidelity_and_sound(ref, tmp_path):
     assert crit["render_sha256"] and crit["plan_version"]
 
 
-def test_late_cut_fails(tmp_path):
+def test_late_cut_needs_review(tmp_path):
     video = render(tmp_path, "late.mp4", shift=5)
     crit = review(FIXTURE, video, tmp_path / "r", stage="animatic")
     statuses = sorted(f["status"] for f in by_rule(crit, "fidelity.cut"))
-    assert statuses == ["fail", "pass"]
-    assert crit["verdict"] == "blocked"
+    assert statuses == ["needs_review", "pass"]
+    assert crit["verdict"] == "open"
 
 
 def test_override_moves_default_out_of_findings(ref, tmp_path):
@@ -71,16 +71,16 @@ def test_override_moves_default_out_of_findings(ref, tmp_path):
     assert crit["overridden"][0]["rule"] == "default.pace_varies"
 
 
-def test_fast_super_blocks_and_number_needs_evidence(ref, tmp_path):
+def test_fast_super_and_number_prompt_review(ref, tmp_path):
     plan = copy_plan(tmp_path)
     score = json.loads((plan / "score.json").read_text())
     score["beats"][0]["super"] = {"text": "Saves 14 hours every week on every site search", "hold": 1.0}
     (plan / "score.json").write_text(json.dumps(score))
     crit = review(plan, ref, tmp_path / "r")
-    rt = by_rule(crit, "communication.reading_time")[0]
-    assert rt["status"] == "fail" and rt["blocking"]
+    rt = by_rule(crit, "communication.reading_time_plan")[0]
+    assert rt["status"] == "needs_review" and not rt["blocking"]
     num = by_rule(crit, "evidence.number_anchored")[0]
-    assert num["status"] == "fail" and num["blocking"]
+    assert num["status"] == "needs_review" and num["blocking"]
     assert by_rule(crit, "default.super_speed")[0]["blocking"] is False
 
 
@@ -127,8 +127,7 @@ def test_deliver_is_not_clear_while_blocking_review_is_open(ref, tmp_path):
     crit = json.loads(crit_path.read_text())
     for f in crit["findings"]:
         if f["blocking"] and f["status"] == "needs_review":
-            f["status"] = "pass"
-            f["evidence"] = "resolved by inspection in test"
+            f["resolution"] = {"status": "pass", "evidence": "synthetic test decision", "method": "fixture inspection"}
     crit_path.write_text(json.dumps(crit))
     res = subprocess.run([sys.executable, str(SCRIPTS / "deliver.py"), "--plan", str(FIXTURE), "--video", str(ref),
                           "--critique", str(crit_path), "--out", str(tmp_path / "D.md")], capture_output=True, text=True)

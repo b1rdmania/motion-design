@@ -6,3 +6,5 @@ renders/
 node_modules/
 .DS_Store
 *.blend1
+
+.venv/

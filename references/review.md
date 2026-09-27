@@ -1,79 +1,51 @@
 # Review
 
-`check.py` measures and lists. You look and decide. A check script cannot certify aesthetic quality, so the report always says which findings were measured and which were judged.
+Scripts measure limited properties and prompt inspection. No metric certifies craft. `pass` means only that the named check found its stated evidence; a detector match is not proof of a successful edit.
 
-## Statuses
+## Status and provenance
 
-| Status | Means |
-|---|---|
-| `pass` | Checked, and it holds |
-| `fail` | Checked, and it does not hold |
-| `needs_review` | A script could not settle it. Look at the frames and set pass or fail. |
-| `not_applicable` | The check does not apply to this film (no text, no claims, intended silence) |
+Findings use `pass`, `fail`, `needs_review` or `not_applicable`, with a `blocking` flag. Only confirmed failures or unresolved blocking review items prevent a clear delivery receipt. An uncertain measurement is not automatically a failure.
 
-An uncertain result is never a pass and never an automatic fail. If you look and still cannot tell, leave it as `needs_review` and add a line to `unresolved`.
+Each finding has an ID, rule, source, timestamp/beat, evidence and method. Original `status` and `evidence` remain intact. To resolve an uncertain finding, record what was actually inspected:
 
-Each finding has a `blocking` flag. Only blocking findings can stop delivery.
+```sh
+python3 SKILL_DIR/scripts/resolve.py --critique review/final-r1/critique.json \
+  --finding f0007 --status pass --method 'frame inspection' \
+  --evidence 'Viewed individual frames at 375px; headline fits and remains legible.'
+```
 
-## Blocking categories
+The resolution stores its own status, evidence, method and date; the script recomputes counts and verdict. It cannot overwrite a measured failure. Re-render/re-check after correcting those. Leave unsupported judgments open; never invent listening or visual inspection. Delivery recomputes effective statuses rather than trusting cached counts.
 
-### Artifact integrity
-The file decodes. Dimensions match a delivery format. fps and duration match the score (±2 frames). Audio is present when the score plans sound. Every style frame exists. A critique counts only for the render whose sha256 it records.
+## Artifact integrity
 
-Flat frames (a solid field) are flagged `needs_review`, not blocking. They usually mean missing media, but a plate can be intended.
+Full decode, required dimensions, fps and duration are checked against the plan. Drafts may use smaller dimensions at the same aspect ratio. Planned sound needs an audio stream, but stream presence alone does not prove audible content. Render and plan hashes bind the critique to the reviewed files. A solid frame is a review prompt, not proof of missing media.
 
-### Communication
-- Reading time: over 25 characters per second of hold fails (blocking). Between 17 and 25 is advice.
-- Legibility at viewing size: judged on `contact-<view_width>px.png`. Check size, contrast and hierarchy.
-- Speech intelligibility: judged.
+## Communication
 
-Not applicable when the film has no text and no speech.
+Reading speed calculations use the **plan**, not observed on-screen timing. More than 25 characters/second prompts review; it is not a universal failure. Only an explicit `delivery.max_text_cps` makes that plan limit blocking.
 
-### Evidence
-See `evidence.md`. Unsupported facts, unknown claim ids and numbers without a claim fail. Metaphor wording and wording that differs from the permitted wording are judged.
+Inspect actual text, its appearance/disappearance and readable interval in the moving render. Check individual frames at the intended viewing width; an entire contact sheet scaled to fit a window is not a valid phone-size test. Listen to required speech. If playback is unavailable, record that limit and leave the finding open.
 
-### Sound integrity
-See `sound.md#integrity`.
+## Evidence
 
-### Fidelity
-Did the render do what its own plan says?
+See `evidence.md`. Missing required source fields and unknown claim IDs are deterministic ledger errors. Numeric detection is triage: numbers can be labels, and claims can have no numbers. Every beat gets a coverage review for actual words, speech and implied visual claims. The presence of a citation does not establish truth; inspect the source and scope.
 
-- Declared events (`cut`, `silence`, `hit`) happen within ±2 frames. Cuts and silences are measured and can fail. Hits use a rough onset detector: a miss is `needs_review`.
-- Mandatory commitments are present and exact (judged; blocking).
-- Holds: the longest still run in each beat compared with the planned hold. This is `needs_review` when short, because camera drift and grain read as motion.
-- Cuts the plan did not declare are `needs_review` (a flash, a pop or an unplanned edit).
+## Sound integrity
 
-## Defaults (advice only)
+See `sound.md#integrity`. Loudness/peak targets block only when explicit. Measurement failure is not intentional silence. Repeats and intelligibility require audio inspection; logs alone cannot settle them.
 
-See `defaults.md`. They never block. A default listed in `score.overrides` is left out of the findings and recorded under `overridden`.
+## Fidelity
 
-## Judged
+Compare mandatory commitments with the actual frames. Cut/onset/silence detectors are heuristics. Misses become `needs_review`; inspect the boundary and, where useful, the renderer's timeline. Silence matching checks both start and end. Event tolerance defaults to two frames and can be set per event; audio adds two analysis windows of allowance.
 
-These are the questions scripts cannot answer. `check.py` lists them as `needs_review` (non-blocking):
+A readable hold can contain camera travel, grain or secondary action. A pixel-difference still-run metric cannot verify readability and does not block delivery. A match cut may be a hard edit: inspect both the edit and its visual relationship.
 
-- **Frame** (style frames and final, per beat): does it carry its job, with one focal point, on brand, and following a reference?
-- **Reskin** (once): could these frames serve another brand with a text swap?
-- **Transition** (animatic and final, per match or morph): does the shared property survive the boundary?
-- **Pacing** (animatic and final, once): does the motion strip follow the treatment's feeling? Activity is measured. Good pacing is judged.
+## Craft
 
-## Sampling
+Frame composition, brand fit, transition quality, rhythm and subjective sound are judged. `defaults.md` contains optional prompts. No mandatory quota of effects, stillness, references or variation applies.
 
-- Style frames: one still per beat, plus a sheet scaled to viewing width.
-- Animatic and final, for every beat:
-  - the start of the hold
-  - the end of the hold
-  - 3 frames before each transition
-  - 2 frames after each transition.
-- For anything the strip or a finding points at, run `frames.py --at <t1>,<t2>`.
-- Read frames at full size when judging small text. Do not judge legibility from a thumbnail.
+## Sampling and stages
 
-## The loop
+Inspect representative style frames before expensive rendering when useful. For moving drafts/finals, extract hold boundaries, text-cue intervals, both sides of transitions and any flagged moments. Use `frames.py --at <seconds,...>` for additional samples. Review the moving sequence for temporal judgments; stills alone cannot settle them.
 
-1. Run `check.py` for the stage.
-2. Open the contact sheets and the strip. Look.
-3. Resolve every `needs_review` finding: set its status and write what you saw.
-4. Fix blocking failures, then the advice you agree with.
-5. Re-render and re-run with `--round n+1`.
-6. Final stage budget: two revision rounds. Then deliver with `unresolved` filled in.
-
-Never edit `plan/` so that a failed fidelity check passes. If the plan was wrong, amend it on purpose: add an entry under `## Amendments` in the treatment with the reason, then re-run the review. The plan version changes, so older critiques stop counting.
+Run the chosen stages and preserve each critique separately. The default final revision budget is two rounds. When exhausted, deliver with limitations rather than relabelling unresolved work as successful. A material plan amendment or changed render invalidates the prior receipt.
