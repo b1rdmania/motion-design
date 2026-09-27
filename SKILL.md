@@ -19,7 +19,7 @@ Decide what the film should communicate, give the renderer a usable plan, and re
 - **Building with an available workflow:** preserve the agent's existing video skills or implementation approach when suitable. Check only the tools actually selected. The named adapters are optional examples, not a required route or an allowlist.
 - **Reviewing existing work:** use its existing plan. Do not restart intake or require a new treatment merely to critique a film. If there is no timed plan, give a qualitative review and identify which fidelity checks cannot run.
 
-For automated review setup, read `references/dependencies.md`. Missing review tools do not prevent planning. Report only the affected operation and available fallback; do not introduce a generic approval stop.
+For automated review setup, read `references/dependencies.md`. After choosing a missing renderer or audio service, consult `references/tool-setup.md` for optional setup links; it is not an installation checklist. Missing review tools do not prevent planning. Report only the affected operation and available fallback; do not introduce a generic approval stop.
 
 `SKILL_DIR` means this directory. A new full project normally uses:
 

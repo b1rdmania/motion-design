@@ -6,7 +6,7 @@ A Claude Code skill that plans a video before the build and reviews the render a
 
 ## Dependencies
 
-Planning and qualitative critique require no renderer or audio service. Automated review needs Python 3.12, NumPy, Pillow, FFmpeg and ffprobe. Tests also need pytest and Bash. Use the user's chosen tools, a suitable existing project workflow, or the agent's choice of available capabilities. The adapters are examples, not an allowlist. Reuse existing planning artifacts rather than repeating another video skill's intake. No ElevenLabs account, API key or paid audio provider is required. See [setup and optional integrations](references/dependencies.md).
+Planning and qualitative critique require no renderer or audio service. Automated review needs Python 3.12, NumPy, Pillow, FFmpeg and ffprobe. Tests also need pytest and Bash. Use the user's chosen tools, a suitable existing project workflow, or the agent's choice of available capabilities. The adapters are examples, not an allowlist. Reuse existing planning artifacts rather than repeating another video skill's intake. No ElevenLabs account, API key or paid audio provider is required. See [review dependency setup](references/dependencies.md) and [optional Remotion, HyperFrames and ElevenLabs setup](references/tool-setup.md).
 
 ## Why
 

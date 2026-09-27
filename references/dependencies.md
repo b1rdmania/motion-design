@@ -21,6 +21,8 @@ The requirements files pin the versions tested for this revision. They do not in
 
 Only the chosen workflow's tools are needed to build. The agent may use an existing video skill, direct code/CLI work, or a combination. HyperFrames, Remotion and Blender integrations are optional examples, not a routing requirement; their adapters state fixture status. Use installed renderer skills when present, otherwise the renderer's documentation. `/media-use` and `/hyperframes-audio` are optional integrations, not names assumed to exist everywhere.
 
+For official links and starter commands after choosing a missing tool, read [optional tool setup](tool-setup.md). Do not load or execute every setup path by default.
+
 ## Optional beat analysis
 
 Manual cue points are the portable default. A user-provided audiomap can be passed to `check.py --audiomap ...` with `beats_sec: [seconds, ...]` and/or `phrases: [{start: seconds}, ...]`. Rhythm hints are opt-in in the score.
