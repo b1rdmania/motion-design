@@ -38,6 +38,13 @@ REF = {
     "judged": "references/review.md#judged",
 }
 
+DIGITS = re.compile(r"\d|%|\bper ?cent\b", re.I)
+NUMBER_WORDS = re.compile(
+    r"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|"
+    r"sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+    r"hundred|thousand|million|billion|half|twice|double|triple|dozen|\w+fold)\b"
+    r"|\btimes (faster|more|less|cheaper|quicker|bigger|smaller)\b", re.I)
+
 STOCK = [
     r"\bintroducing\b", r"^meet\b", r"say goodbye to", r"imagine a world", r"in today'?s fast[- ]paced",
     r"what if i told you", r"the future of .+ is here", r"harness the power", r"game[- ]chang",
@@ -87,7 +94,7 @@ def beat_at(score: dict, t: float):
 
 # ---------------------------------------------------------------- integrity
 
-def integrity(r: Review, video: Path, info: dict, delivery: dict, fps: float):
+def integrity(r: Review, video: Path, info: dict, delivery: dict, fps: float, stage: str = "final"):
     if not info["ok"] or not info["video"]:
         r.add("integrity.decode", "fail", True, evidence=info.get("error", "no video stream"),
               fix="re-render; the file does not decode")
@@ -100,6 +107,9 @@ def integrity(r: Review, video: Path, info: dict, delivery: dict, fps: float):
     formats = delivery.get("formats", [])
     if formats:
         match = [f for f in formats if f["width"] == v["width"] and f["height"] == v["height"]]
+        if not match and stage != "final":  # drafts may render smaller at the same aspect ratio
+            match = [f for f in formats
+                     if abs(f["width"] / f["height"] - v["width"] / v["height"]) < 0.01]
         r.add("integrity.dimensions", "pass" if match else "fail", True,
               evidence=f"{v['width']}x{v['height']}; delivery allows "
                        + ", ".join(f"{f['width']}x{f['height']}" for f in formats),
@@ -201,11 +211,19 @@ def evidence(r: Review, ledger: dict):
                 r.add("evidence.permitted_wording", "needs_review", True, beat=b["id"], t=b["start"],
                       evidence=f"on screen: '{words}'; permitted: '{pw}'",
                       fix="use the permitted wording or record why the new wording is still supported")
-        if re.search(r"\d", words) and not ids:
+        if ids:
+            continue
+        if DIGITS.search(words):
             touched = True
             r.add("evidence.number_anchored", "fail", True, beat=b["id"], t=b["start"],
                   evidence=f"'{words}' contains a number and no evidence id",
                   fix="add a claim to evidence.json and set beat.proves")
+        elif NUMBER_WORDS.search(words):
+            touched = True
+            r.add("evidence.number_anchored", "needs_review", True, beat=b["id"], t=b["start"],
+                  evidence=f"'{words}' may state a quantity ('{NUMBER_WORDS.search(words).group(0)}') "
+                           "and has no evidence id",
+                  fix="if it is a quantity claim, add it to evidence.json; if not, mark pass")
     if not touched:
         r.add("evidence.claims", "not_applicable", True, evidence="no claims or numbers in the film")
 
@@ -432,7 +450,7 @@ def main() -> None:
             raise SystemExit("--video or --stills is required")
         info = probe(a.video)
         render_hash = sha256_file(a.video) if a.video.exists() else None
-        if integrity(r, a.video, info, delivery, fps):
+        if integrity(r, a.video, info, delivery, fps, a.stage):
             raw, vfps = motion_strip.read_frames(a.video)
             res = motion_strip.analyse(raw, vfps)
             strip = {k: v for k, v in res.items() if k != "activity"}

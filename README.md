@@ -2,7 +2,7 @@
 
 A Claude Code skill that plans a video before the build and reviews the render after. It works with HyperFrames, Remotion and Blender. It does not render.
 
-**Status: in development.** The spec, the review scripts and a timing fixture are done. The skill text, the renderer adapters and the first test film are next.
+**Status: in development.** A draft of the skill, its references and three renderer adapters exist, together with the review scripts and a timing fixture. The skill has not yet made a film.
 
 ## Why
 
@@ -52,16 +52,25 @@ flowchart TD
 | `scripts/audio_check.py` | Measures loudness, true peak, clipping, silences and onsets |
 | `scripts/deliver.py` | Writes `DELIVERY.md`; exits non-zero on a stale critique or open blocking findings |
 
-`fixtures/timing/` holds a 5-second test with three plates, two hard cuts and one silence. Each renderer adapter must hit its events within ±2 frames. There are 8 tests, and all pass.
+`fixtures/timing/` holds a 5-second test with three plates, two hard cuts and one silence. Each renderer adapter must hit its events within ±2 frames. There are 9 tests, and all pass.
 
 The full design is in [SPEC.md](SPEC.md).
 
+## Layout
+
+```
+SKILL.md       the procedure: intake, treatment, score, handoff, review, delivery
+references/    treatment, evidence, score, copy, motion, sound, review, defaults
+adapters/      how the score maps onto HyperFrames, Remotion and Blender
+scripts/       the review scripts
+fixtures/      the timing fixture
+```
+
 ## Next
 
-1. A test film, taken through the whole loop.
-2. SKILL.md and the `references/` files, written from what that film needed.
-3. HyperFrames, Remotion and Blender adapters, checked against the timing fixture.
-4. Proof:
+1. Test film: a fresh agent with only the installed skill makes a film from a real brief. The places where it gets stuck show the gaps in the skill text.
+2. Run each adapter against the timing fixture. At the moment each one says "not yet run".
+3. Proof:
    - the same brief made with the skill and without it, judged blind
    - a second brief with different references, to check that the films do not look alike.
 

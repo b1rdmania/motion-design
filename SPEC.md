@@ -84,7 +84,7 @@ The plan folder holds `treatment.md`, `score.json` and `evidence.json`. The plan
 - `limits`: what the film must not imply.
 - `beats`: the beats where the claim appears.
 
-A metaphor is allowed to be unprovable. It must not be presented as a fact. Example: lifted record layers in a film stand for a data join. They do not show that a property is available.
+A metaphor is allowed to be unprovable. It must not be presented as a fact. Example: a clock running backwards can stand for time given back. It does not promise a same-day service.
 
 ## score.json
 
@@ -221,7 +221,7 @@ A small shared timing fixture tests all three adapters: 5 s, 3 beats, 2 hard cut
 ## Proof of v1
 
 1. **Timing fixture.** It passes in HyperFrames and Remotion. The Blender adapter ships, marked "fixture-tested" only if it passes.
-2. **First real brief: Site DNA.** It has a brief, a claim ledger, assets and known failure cases (see `~/Documents/site-dna/video/codex/v3/`). Make one film, skill-on, in HyperFrames.
+2. **First real brief.** Make one film with a fresh agent that has only the installed skill. Private briefs stay outside the repo.
 3. **Blind judge.** A fresh agent that has not seen either build gets the skill-on and skill-off films unlabelled. Same brief, assets and effort for both. It scores comprehension, brand fit, readability and preference. Esko reviews as a second judge if he is willing. Andy is not the judge.
 4. **Not samey, run early.** A second, contrasting real brief (Common or Record Bore) goes through the same renderer. If the two films look alike, the skill is too prescriptive. This runs before any polish.
 5. Run `skill-auditor` on the skill.
@@ -238,7 +238,8 @@ A small shared timing fixture tests all three adapters: 5 s, 3 beats, 2 hard cut
 ## Build order
 
 1. Repo skeleton, scripts and the timing fixture. These do not depend on any open question.
-2. One full loop in HyperFrames on Site DNA: plan → style frames → animatic → final → review.
-3. SKILL.md and references, written from what the loop needed.
-4. Remotion and Blender adapters, checked against the fixture.
-5. Contrasting brief, blind judge, `skill-auditor`.
+2. Draft SKILL.md and references, then run `skill-auditor`.
+3. One full loop in HyperFrames, run by a fresh agent with only the skill: plan → style frames → animatic → final → review.
+4. Fix the gaps the fresh agent hit.
+5. Remotion and Blender adapters, checked against the fixture.
+6. Contrasting brief and blind judge.

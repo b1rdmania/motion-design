@@ -133,3 +133,13 @@ def test_deliver_is_not_clear_while_blocking_review_is_open(ref, tmp_path):
     res = subprocess.run([sys.executable, str(SCRIPTS / "deliver.py"), "--plan", str(FIXTURE), "--video", str(ref),
                           "--critique", str(crit_path), "--out", str(tmp_path / "D.md")], capture_output=True, text=True)
     assert res.returncode == 0, (tmp_path / "D.md").read_text()
+
+
+def test_number_in_words_needs_review_not_fail(ref, tmp_path):
+    plan = copy_plan(tmp_path)
+    score = json.loads((plan / "score.json").read_text())
+    score["beats"][1]["super"] = {"text": "seven days for a puncture.", "hold": 2.0}
+    (plan / "score.json").write_text(json.dumps(score))
+    crit = review(plan, ref, tmp_path / "r")
+    f = by_rule(crit, "evidence.number_anchored")[0]
+    assert f["status"] == "needs_review" and f["blocking"]
