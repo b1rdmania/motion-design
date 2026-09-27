@@ -43,7 +43,7 @@ No beat analyser is bundled. External analysis requires an exact upstream revisi
 
 ## Renderer boundaries
 
-Adapters map the score to HyperFrames, Remotion and Blender. They do not impose entrance-then-freeze staging. Match cuts may be instantaneous; overlapping sequences are used only for edit mechanisms that need them. Audio can be mixed with available renderer tools or externally; muxing must preserve planned picture duration.
+The agent follows the user's tool choice, preserves a suitable existing project, or selects its own available workflow. Existing video skills and direct coding are valid; no specific renderer is preferred by this skill. Reuse their planning artifacts rather than duplicating intake. Optional adapters illustrate mappings to HyperFrames, Remotion and Blender and do not exclude other tools or combinations. They do not impose entrance-then-freeze staging. Match cuts may be instantaneous; overlapping sequences are used only for edit mechanisms that need them. Audio can be mixed with available renderer tools or externally; muxing must preserve planned picture duration.
 
 Each adapter retains an explicit fixture status. The FFmpeg-generated timing fixture tests the review scripts; it does not prove the three adapters work. Run the five-second fixture through each real renderer before marking it tested. This revision does not claim those runs have occurred.
 

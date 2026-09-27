@@ -1,12 +1,12 @@
 # motion-design
 
-A Claude Code skill that plans a video before the build and reviews the render after. It works with HyperFrames, Remotion and Blender. It does not render.
+A Claude Code skill that plans a video before the build and reviews the render after. It complements the agent's existing video workflow and does not choose a renderer for it. Optional adapters cover HyperFrames, Remotion and Blender; other workflows can use the same planning and review process. It does not render.
 
 **Status: in development.** A draft of the skill, its references and three renderer adapters exist, together with the review scripts and a timing fixture. The skill has not yet made a film.
 
 ## Dependencies
 
-Planning and qualitative critique require no renderer or audio service. Automated review needs Python 3.12, NumPy, Pillow, FFmpeg and ffprobe. Tests also need pytest and Bash. Build with only the renderer you choose. No ElevenLabs account, API key or paid audio provider is required. See [setup and optional integrations](references/dependencies.md).
+Planning and qualitative critique require no renderer or audio service. Automated review needs Python 3.12, NumPy, Pillow, FFmpeg and ffprobe. Tests also need pytest and Bash. Use the user's chosen tools, a suitable existing project workflow, or the agent's choice of available capabilities. The adapters are examples, not an allowlist. Reuse existing planning artifacts rather than repeating another video skill's intake. No ElevenLabs account, API key or paid audio provider is required. See [setup and optional integrations](references/dependencies.md).
 
 ## Why
 

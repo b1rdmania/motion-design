@@ -1,7 +1,7 @@
 ---
 name: motion-design
 description: >
-  Plan a code-rendered video or review an existing render against its brief.
+  Plan a video or review an existing render against its brief.
   Use for treatments, storyboards, promos, explainers and motion-design critique.
   Writes a treatment, evidence ledger and timed score; hands off to the chosen
   renderer; reviews style frames, moving drafts and final output. Does not render
@@ -16,7 +16,7 @@ Decide what the film should communicate, give the renderer a usable plan, and re
 ## Start with the requested operation
 
 - **Planning:** read existing positioning, brand and brief first. No renderer, Python package or audio service is needed.
-- **Building with a renderer:** hand off the plan using the relevant adapter. Check only that renderer's requirements. An installed sibling skill is useful, not a requirement for planning or critique.
+- **Building with an available workflow:** preserve the agent's existing video skills or implementation approach when suitable. Check only the tools actually selected. The named adapters are optional examples, not a required route or an allowlist.
 - **Reviewing existing work:** use its existing plan. Do not restart intake or require a new treatment merely to critique a film. If there is no timed plan, give a qualitative review and identify which fidelity checks cannot run.
 
 For automated review setup, read `references/dependencies.md`. Missing review tools do not prevent planning. Report only the affected operation and available fallback; do not introduce a generic approval stop.
@@ -59,9 +59,19 @@ Plan each beat's job, focal element, readable text intervals, movement, transiti
 
 Present the proposition, ending and beat table. Continue within existing authorization. Pause only for a material unanswered decision or a user-requested approval gate.
 
-## 4. Handoff and progressive review
+## 4. Build with the appropriate workflow, then review
 
-Read only the chosen adapter in `adapters/`. Preserve the plan's actual commitments; implementation choices belong to the renderer. Meaningful changes to approved timing, copy or commitments get a short amendment and a new review, rather than silently rewriting the target.
+Choose within the user's request and the host's applicable instructions:
+
+1. Honour an explicit tool or workflow choice.
+2. Preserve a suitable existing project's toolchain; do not migrate it merely because this skill includes an adapter.
+3. Otherwise, let the agent choose among its available video skills, coding capabilities and tools based on the brief, asset needs, editability, runtime and cost. A combination is valid, such as Blender footage with another tool for typography and editing.
+
+This skill does not default to HyperFrames, Remotion or Blender. `adapters/` contains optional integration examples for those tools, not an exhaustive list. Use an adapter only after choosing that tool. A different workflow needs no new adapter before work can proceed: give it the creative decisions, timing and delivery requirements, then review its standard video export.
+
+Complement the chosen workflow's strengths. If it already plans, storyboards or reviews, reuse those artifacts and map the fields needed by these scripts rather than running two intake processes or imposing two competing story structures. Keep one source of truth for the current plan. Do not load or install another skill merely because it is named here.
+
+Preserve the plan's actual commitments; implementation choices belong to the building workflow. Meaningful changes to approved timing, copy or commitments get a short amendment and a new review, rather than silently rewriting the target.
 
 For the full path:
 

@@ -19,7 +19,7 @@ ffprobe -version
 
 The requirements files pin the versions tested for this revision. They do not install a renderer or any paid service. For existing supported environments, avoid replacing unrelated packages; use isolation or report compatibility limits.
 
-Only the chosen renderer is needed to build. HyperFrames, Remotion and Blender integrations are optional and their adapters state fixture status. Use installed renderer skills when present, otherwise the renderer's documentation. `/media-use` and `/hyperframes-audio` are optional integrations, not names assumed to exist everywhere.
+Only the chosen workflow's tools are needed to build. The agent may use an existing video skill, direct code/CLI work, or a combination. HyperFrames, Remotion and Blender integrations are optional examples, not a routing requirement; their adapters state fixture status. Use installed renderer skills when present, otherwise the renderer's documentation. `/media-use` and `/hyperframes-audio` are optional integrations, not names assumed to exist everywhere.
 
 ## Optional beat analysis
 
