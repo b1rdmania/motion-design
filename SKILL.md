@@ -53,11 +53,11 @@ To **review an existing film**, skip to step 6 and use its existing plan. If the
 
 **How much to ask.** The conversation is central when the story is unresolved. When the user arrives with a clear brief, keep it light: confirm what you read, ask only what is missing, and move on. If the user has said to go ahead without them, make the calls yourself and mark them as assumed. Do not skip steps 2 and 3 just because you could guess.
 
-`SKILL_DIR` means this directory. A project normally uses `plan/`, `renders/`, `review/` and `DELIVERY.md`. Never report a review you did not perform.
+`SKILL_DIR` means this directory. The project folder is wherever the user's film lives; it holds `plan/`, `renders/`, `review/` and `DELIVERY.md`. Run the scripts from there. Never report a review you did not perform.
 
 ## 1. Understand the business
 
-Ask: "What are you building? What are you trying to get across? Where can I read about it?" Then read before asking anything else:
+Ask: "What are you building? What are you trying to get across? Where can I read about it?" Skip whatever the request already answers. Then read before asking anything else:
 
 - the product, site or repo
 - any positioning doc, pitch deck or brief
@@ -69,11 +69,12 @@ Collect the real materials (`references/assets.md`): brand doc, font files, logo
 
 Ask only what the material does not answer, in one conversational message:
 
-1. Who is watching, and where? (feed, launch page, keynote, pitch, phone, sound on or off)
-2. Why should they care? What is at stake for them?
-3. What should change after they watch: what do they remember, and what do they do next?
-4. How should it feel, and how should that feeling move? ("intrigue → recognition → confidence")
-5. What should the film never show or claim?
+1. Who is watching, and where? (feed, launch page, keynote, pitch, phone, sound on or off; length and aspect)
+2. Who has to act after watching, and is the film told from their side?
+3. **What is at stake?** What is hardest for them, or for the business, right now? What does the whole effort depend on? Always ask this one. The answer is usually where the film's tension is, and users rarely volunteer it.
+4. What should change after they watch: what do they remember, and what do they do next?
+5. How should it feel, and how should that feeling move? ("intrigue → recognition → confidence")
+6. What should the film never show or claim?
 
 Discuss tone and placement. If the positioning itself is unresolved, say so and help the user find one sentence they believe before designing anything.
 
@@ -96,9 +97,11 @@ Complete `plan/treatment.md` from `references/treatment.md`. Decide:
 
 - composition and typography
 - named references: what to take from each, and what to leave
-- the craft decisions that will make it reel-worthy
+- the craft decisions that will make it reel-worthy, including one **signature moment**: the shot someone would screenshot, or cut into a reel. Design it deliberately; a film of competent beats has none
 - motion vocabulary, pacing and sound
 - the lead: music, narration or visual (`references/sound.md`).
+
+The treatment's refusals and references win over any tool's house style. If a workflow's defaults (glows, ghost text, stock decoratives) conflict with them, turn the defaults off.
 
 Read `references/copy.md` and `references/motion.md` before writing the words and the beats.
 
@@ -127,7 +130,7 @@ Put beat starts on whole frames. Declare hard cuts, silences and hits in `events
 
 An explicit user choice wins, and a suitable existing toolchain stays. Record each choice and its reason in the treatment. If the best tool is missing, say what it would add, then set it up (`references/tool-setup.md`) or record the compromise.
 
-Show the user representative **style frames** before the expensive build: one still per key beat at final size, checked at viewing width. Present the treatment, the beat table and the frames. Wait for approval, unless the user said to go ahead without them.
+Show the user representative **style frames** before the expensive build: one still per key beat at final size, checked at viewing width. Make the signature moment one of them. Present the treatment, the beat table and the frames. Wait for approval, unless the user said to go ahead without them.
 
 ## 5. Build
 
@@ -150,9 +153,18 @@ Pass `--audiomap` for a music-led film (`python3 SKILL_DIR/scripts/beatmap.py tr
 1. **Watch it as the viewer would.** Open individual frames at viewing width, starting with frame 0: it is the thumbnail a muted scroller sees. Ask:
    - Does the story from step 3 come through?
    - Would this go first in a showreel (`judged.reel_bar`)?
-2. **Settle each `needs_review` finding** with `scripts/resolve.py`, saying what you inspected. If you cannot tell (for example, you cannot listen), leave it open.
-3. **Record accepted limits** with `resolve.py --accept-limit "..."`, so they reach the delivery note.
-4. **Fix and re-render.** Blocking problems come first, then anything below the bar.
+2. **Get a cold read** (`judged.cold_viewer`). You know the plan, so you cannot see the film as a stranger does. If you can start a subagent, give a fresh one only the frames, sampled at about 4 per second (no plan, no brief, no treatment). Ask it:
+   - Who is this for?
+   - What is it?
+   - What should I do next?
+   - What was the one moment you remember?
+
+   If you cannot start one, answer those questions strictly from the frames, as if you had never seen the plan. A film that is well made but unclear fails this: a blind judge preferred a plainer film that said who it was for in its first second.
+3. **Settle each `needs_review` finding** with `scripts/resolve.py`, saying what you inspected. If you cannot tell (for example, you cannot listen), leave it open.
+4. **Record accepted limits** with `resolve.py --accept-limit "..."`, so they reach the delivery note.
+5. **Fix and re-render.** Blocking problems come first. Then, if `judged.reel_bar` fails, spend a revision round lifting the film towards the bar, usually the signature moment, before accepting it. Name what holds it back; do not just record it.
+
+Review volume: when one inspection genuinely covers several findings, settle them together (`resolve.py --rule <rule> [--beat <id>]`). Evidence decisions carry across renders of the same plan (`resolve.py --carry-from <earlier critique.json>`). Never batch-pass what you did not look at.
 
 **Budget:** up to two final revision rounds, unless the user asks otherwise. Then deliver with the open findings listed. Do not call an unresolved film finished. Do not edit the plan to make a failed check disappear. A real plan change is a dated amendment in the treatment, followed by a new review.
 
@@ -160,6 +172,6 @@ Pass `--audiomap` for a music-led film (`python3 SKILL_DIR/scripts/beatmap.py tr
 python3 SKILL_DIR/scripts/deliver.py --plan plan --video renders/final.mp4 --critique review/final-r<n>/critique.json --out DELIVERY.md
 ```
 
-`<n>` is the latest round. The script exits non-zero if blocking findings are open, or if the critique does not match the render or the plan. `DELIVERY.md` includes asset and music provenance and the accepted limits. Give the user the render and the report. Say what was checked and what was not.
+`<n>` is the latest round. For more formats, add `--also renders/final-16x9.mp4:review/final-16x9-r<n>/critique.json` for each one, so one report covers them all. The script exits non-zero if blocking findings are open, or if the critique does not match the render or the plan. `DELIVERY.md` includes asset and music provenance and the accepted limits. Give the user the render and the report. Say what was checked and what was not.
 
 Planning needs no tools. Automated review needs ffmpeg, Python 3, numpy and Pillow (`references/dependencies.md`). If one is missing, say which operation it blocks and carry on with the rest.

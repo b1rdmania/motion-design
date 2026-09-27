@@ -68,6 +68,10 @@
 
 A match cut can be instantaneous. For example, `{"type":"cut","relationship":"same circular shape"}` declares a cut to detect and a relationship to inspect. A morph need not contain a cut. Detector misses are uncertain, not proof of a timing failure.
 
+## Style-frame times
+
+By default a style frame is taken mid-hold: `start + build + (dur − build) / 2`. If a beat's key text or moment arrives later than that, set `beats[].style_at` (seconds, absolute) and render the style frame there. `check.py` labels the stills with it.
+
 ## Whole frames
 
 Put every beat start on a whole frame: a multiple of 1 ÷ fps (at 30 fps, 4.3667 is frame 131; 4.367 may round to frame 132). Renderers round differently. `check.py` flags off-frame starts (`plan.frame_aligned`).

@@ -15,9 +15,10 @@ The one rule every source agrees on: **the line says what the picture cannot.**
 
 ## Structure
 
+- **Clarity before cleverness.** By about five seconds, the viewer should know the film is for them. By the end, they should know what the thing is (name and a one-line function) and what to do. An intriguing opening only works if it resolves quickly; an abstract hook that never says who "you" is loses the viewer who did not write the brief.
 - Writing the last beat first clarifies what the film is for.
 - One promise and one proof point is the usual shape of a short film. Three value props in 30 s is typically a structural failure, not a style problem.
-- The brand name often lands harder after the hook than before it. Early branding is a choice, not a fault.
+- The brand name often lands harder after the hook than before it, but not much after: if the name arrives in the last quarter, check that the viewer knew what they were watching before then. Early branding is a choice, not a fault.
 - A CTA can only ask for what the film has earned. A feature tour cannot support "buy now".
 - If the film has VO and a tagline, speaking the tagline helps. Ipsos found text-only taglines barely moved perception; the same line voiced did.
 

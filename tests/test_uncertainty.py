@@ -1,3 +1,4 @@
+import math
 """Regression cases where proxies previously claimed certainty about a film."""
 import json
 import sys
@@ -118,9 +119,13 @@ def test_multiple_text_cues_are_timed_and_sampled_independently():
     s = score(); s['beats'][0]['text_cues'] = [
         {'text': 'First', 'start': .2, 'hold': .5}, {'text': 'Second', 'start': 1, 'hold': .8}]
     r = check.Review(s, {}); check.communication(r, 'final', 'sheet')
-    assert [f['t'] for f in r.findings if f['rule'] == 'communication.rendered_text'] == [.2, 1]
+    assert [f['t'] for f in r.findings if f['rule'] == 'communication.reading_time_plan'] == [.2, 1]
+    text = [f for f in r.findings if f['rule'] == 'communication.rendered_text']
+    assert len(text) == 1 and "'First' from 0.20s" in text[0]['evidence'] and "'Second' from 1.00s" in text[0]['evidence']
     samples = frames.sample_times(s, 'final', 2, [])
-    assert [.2, 1] == [x['t'] for x in samples if x['kind'] == 'text-start']
+    fps = s.get('fps', 24)
+    starts = [x['frame'] for x in samples if x['kind'] == 'text-start']
+    assert starts == [math.ceil(.2 * fps - 1e-6), math.ceil(1 * fps - 1e-6)]
 
 
 def test_resolution_preserves_measurement_and_refreshes_summary():
