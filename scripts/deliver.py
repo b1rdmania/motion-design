@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import load_json, plan_version, sha256_file  # noqa: E402
+from _common import load_json, plan_version, sha256_file, effective_status, review_summary  # noqa: E402
 
 
 def section(video: Path, crit_path: Path, plan: Path) -> tuple[list[str], bool]:
@@ -32,9 +32,13 @@ def section(video: Path, crit_path: Path, plan: Path) -> tuple[list[str], bool]:
     if crit.get("plan_version") != plan_version(plan):
         problems.append("plan changed after the critique; re-run check.py or record an amendment")
     findings = crit.get("findings", [])
-    blocking = [f for f in findings if f["blocking"] and f["status"] in ("fail", "needs_review")]
-    advice = [f for f in findings if not f["blocking"] and f["status"] == "fail"]
-    judged_open = [f for f in findings if not f["blocking"] and f["status"] == "needs_review"]
+    blocking = [f for f in findings if f["blocking"] and effective_status(f) in ("fail", "needs_review")]
+    advice = [f for f in findings if not f["blocking"] and effective_status(f) == "fail"]
+    judged_open = [f for f in findings if not f["blocking"] and effective_status(f) == "needs_review"]
+    summary = review_summary(findings)  # Never trust stale cached counts/verdict.
+    completed = [f for f in findings if f.get("resolution") and effective_status(f) != "needs_review"
+                 and f["status"] == "needs_review"]
+    script_passes = [f for f in findings if f["status"] == "pass"]
     if problems or blocking:
         ok = False
     lines += [f"- sha256 `{digest}`", f"- plan version `{plan_version(plan)}`",
@@ -43,20 +47,49 @@ def section(video: Path, crit_path: Path, plan: Path) -> tuple[list[str], bool]:
         lines += ["**Receipt problems:**", *[f"- {p}" for p in problems], ""]
     lines.append(f"**Status:** {'clear of blocking findings' if ok else 'NOT CLEAR'}")
     lines.append("")
+    lines += [f"**Current findings:** {summary['counts']}", "",
+              "**Script results marked pass (scope as recorded):**", *[
+                  f"- `{f['rule']}` ({f.get('method', 'script')}): {f['evidence']}" for f in script_passes], ""]
+    lines += ["**Recorded reviewer decisions:**", *[
+        f"- `{f['rule']}` {effective_status(f)} · {f['resolution']['method']} · {f['resolution']['evidence']}"
+        for f in completed], ""] if completed else ["**Recorded reviewer decisions:** none", ""]
     if blocking:
         lines += ["**Open blocking findings:**", *[
-            f"- `{f['rule']}` {f['status']} · beat {f['beat']} · {f['t']}s · {f['evidence']}" for f in blocking], ""]
+            f"- `{f['rule']}` {effective_status(f)} · beat {f['beat']} · {f['t']}s · "
+            f"{f.get('resolution', {}).get('evidence', f['evidence'])}" for f in blocking], ""]
     if advice:
         lines += ["**Defaults not met (advice):**", *[
             f"- `{f['rule']}` · beat {f['beat']} · {f['evidence']}" for f in advice], ""]
     if judged_open:
-        lines += [f"**Judged items not resolved:** {len(judged_open)}", ""]
+        lines += [f"**Advisory/review items not resolved:** {len(judged_open)}", *[
+            f"- `{f['rule']}` · beat {f['beat']} · {f['t']}s · {f['evidence']}"
+            for f in judged_open], ""]
     if crit.get("overridden"):
         lines += ["**Overridden defaults:**", *[
             f"- `{o['rule']}`: {o['reason']}" for o in crit["overridden"]], ""]
+    if crit.get("accepted_limits"):
+        lines += ["**Accepted limits:**", *[f"- {x['limit'] if isinstance(x, dict) else x}"
+                                             for x in crit["accepted_limits"]], ""]
     for u in crit.get("unresolved", []):
         lines.append(f"- unresolved: {u}")
     return lines, ok
+
+
+def provenance(plan: Path) -> list[str]:
+    score = load_json(plan / "score.json", {})
+    assets = load_json(plan / "assets.json", {})
+    lines = ["## Provenance", ""]
+    music = score.get("music") or {}
+    if music:
+        lines.append(f"- Music: {music.get('track', '—')} · {music.get('provenance', 'provenance not recorded')}")
+    for x in assets.get("assets", []):
+        lines.append(f"- {x.get('id', x.get('path'))}: {x.get('path', '')} · source {x.get('source', 'not recorded')}"
+                     f" · licence {x.get('licence', 'unknown')}" + (" · sample data" if x.get("sample_data") else ""))
+    for m in assets.get("missing", []):
+        lines.append(f"- Missing: {m}")
+    if len(lines) == 2:
+        lines.append("- No music or asset provenance recorded (plan/assets.json, score.music).")
+    return lines + [""]
 
 
 def main() -> None:
@@ -77,14 +110,14 @@ def main() -> None:
     score = load_json(a.plan / "score.json", {})
     head = [
         f"# Delivery: {score.get('title', a.plan.resolve().parent.name)}", "",
-        "Checked by script: decode, dimensions, fps, duration, reading time, evidence ids, loudness, "
-        "true peak, clipping, planned cuts and silences. Judged by inspecting frames: legibility at "
-        "viewing size, brand, commitments, transitions, pacing. Aesthetic quality is not certified "
-        "by any check.", "",
+        "Only the results and reviewer decisions listed below are recorded as completed. "
+        "Plan calculations do not verify the render; detector matches are heuristic. "
+        "Listening and visual inspection are not inferred from a cue list or a successful script. "
+        "Aesthetic quality is not certified by any check.", "",
         f"Plan: `{a.plan}` · evidence ledger: `{a.plan / 'evidence.json'}` · "
         f"treatment: `{a.plan / 'treatment.md'}`", "",
     ]
-    a.out.write_text("\n".join(head + body) + "\n")
+    a.out.write_text("\n".join(head + body + provenance(a.plan)) + "\n")
     print(f"{'clear' if all_ok else 'NOT CLEAR'} → {a.out}")
     sys.exit(0 if all_ok else 1)
 

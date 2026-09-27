@@ -22,13 +22,15 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _common import need, probe, run, write_json, load_json  # noqa: E402
+from _common import need, probe, run, write_json, load_json, text_cues  # noqa: E402
 
 
 def sample_times(score: dict, stage: str, duration: float, extra: list[float]) -> list[dict]:
     fps = float(score.get("fps", 24))
     one = 1.0 / fps
     out = []
+    if stage != "style_frames":
+        out.append({"beat": (score.get("beats") or [{}])[0].get("id"), "kind": "first-frame", "t": 0.0})
     for i, b in enumerate(score.get("beats", [])):
         start, dur = float(b["start"]), float(b["dur"])
         end = start + dur
@@ -42,6 +44,11 @@ def sample_times(score: dict, stage: str, duration: float, extra: list[float]) -
             out.append({"beat": b["id"], "kind": "transition-after", "t": start + 2 * one})
         out.append({"beat": b["id"], "kind": "hold-start", "t": hold_start})
         out.append({"beat": b["id"], "kind": "hold-end", "t": end - 2 * one})
+        for cue in text_cues(b):
+            cue_start = start + float(cue.get("start", 0))
+            cue_end = cue_start + float(cue.get("hold", 0))
+            out.append({"beat": b["id"], "kind": "text-start", "t": cue_start})
+            out.append({"beat": b["id"], "kind": "text-end", "t": max(cue_start, cue_end - one)})
     for t in extra:
         out.append({"beat": None, "kind": "flagged", "t": t})
     for s in out:

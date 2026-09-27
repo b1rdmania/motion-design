@@ -1,83 +1,76 @@
 # motion-design
 
-A Claude Code skill that plans a video before the build and reviews the render after. It works with HyperFrames, Remotion and Blender. It does not render.
+A Claude Code skill that helps a user work out what their video should say, then turns that story into showreel-quality motion design. It works like a creative director, motion designer and copywriter: discovery, narrative, visual treatment, toolchain choice and review. It does not render. The agent builds with whatever tools suit each shot, such as Blender, HyperFrames, Remotion or ffmpeg.
 
-**Status: in development.** A draft of the skill, its references and three renderer adapters exist, together with the review scripts and a timing fixture. The skill has not yet made a film.
+**Status: in development.** The skill has made two test films. What they showed, and what changed as a result, is recorded in [SPEC.md](SPEC.md#proof-plan).
 
 ## Why
 
-Agents can now build clean video in code. The result still looks generated: text fades up, layouts are centred, three features get listed, and the copy opens with "Introducing…". The agent builds before it decides. A creative director, a motion designer and a copywriter decide first.
-
-This skill makes the agent decide, write the decisions down, and keep to them. It does not set a house style. The film's own plan and references set the style.
+Agents can now build clean video in code. The result still looks generated: text fades up, layouts are centred, three features get listed, and the copy opens with "Introducing…". The agent builds before it decides what the film is for. A creative director, a motion designer and a copywriter decide first.
 
 ## Flow
 
 ```mermaid
 flowchart TD
-    A[Intake: four questions] --> B[treatment.md + evidence.json]
-    B --> C[score.json: timed plan in seconds]
-    C --> D[Renderer: HyperFrames / Remotion / Blender]
+    A[1. Understand the business: read material, collect real assets] --> B[2. Audience and stakes]
+    B --> C[3. Develop the narrative together: 2-3 tellings, user chooses]
+    C --> D[4. Visual treatment + evidence + timed score + toolchain]
     D --> E[Style frames]
-    E -->|review 1: look, legibility| F[Animatic, low-res]
-    F -->|review 2: timing, cuts, sound| G[Final render]
-    G -->|review 3: critique.json| H{Blocking findings open?}
-    H -- yes, rounds left --> G
-    H -- no, or budget spent --> I[DELIVERY.md with open findings listed]
+    E --> F[5. Build with the strongest tools, keeping their motion craft]
+    F --> G[Moving draft, then final]
+    G --> H[6. Does it land? Story, reel bar, scripted checks]
+    H -- fix, up to 2 rounds --> F
+    H --> I[DELIVERY.md with provenance and open findings]
 ```
 
-- **Intake.** Who watches and where. What they should remember and do next. What they should feel. What the video will not do.
-- **Treatment.** One proposition, the last beat written first, named reference films, a small motion vocabulary, and an evidence ledger. The ledger marks each claim as fact, inference or metaphor.
-- **Score.** Beats, on-screen text, voiceover, holds, transitions and sound cues, in seconds, so any renderer can use it.
-- **Review.** Scripts measure what they can. The agent inspects frames for what scripts cannot judge.
+- **Discovery and narrative come first.** The questions are central when the story is unclear, and light when the user arrives with a clear brief.
+- **The bar is showreel quality.** Think of the piece a senior motion designer puts first in their reel, or sends to audition for an A24 trailer. That is a standard of craft, not a house style.
+- **Tools are chosen per shot for quality.** Blender for light and camera; HyperFrames or Remotion for type and UI; often a combination. The plan owns what the film says and when. The tools own how it moves.
+- **Real assets.** Brand fonts, SVGs and colours come from the project and are loaded from their files.
 
-## Review rules
+## Review
 
-- Each finding is `pass`, `fail`, `needs_review` or `not_applicable`. An uncertain result is `needs_review`. It is never a pass.
-- Only five kinds of finding can block delivery:
+Scripts support the judgement; they do not replace it.
+
+- Each finding is `pass`, `fail`, `needs_review` or `not_applicable`. An uncertain result stays `needs_review` until someone inspects it and records a decision.
+- Five kinds of finding can block delivery:
   - **integrity:** decode, size, fps, duration
-  - **communication:** text readable in time and at viewing size
-  - **evidence:** unsupported claims
-  - **sound integrity:** clipping, loudness, gaps
-  - **fidelity:** did the render do what its own plan said?
-- Craft numbers from the research (hold ratios, pace, reading speed, stock phrases) are defaults. They give advice only, and a plan can override any of them with a reason.
+  - **communication:** the planned reading-speed gate, and text readable at viewing size
+  - **evidence:** unsupported claims, and sample data shown as real
+  - **sound integrity:** clipping, declared loudness, gaps
+  - **fidelity:** the render does what its plan says, and embedded footage matches its source.
+- Craft prompts only advise. The judged questions ("does the story come through?", "would this go first in a reel?") are where a film gets better.
 - A critique records the render's sha256 and the plan version. A critique of another file or an older plan does not count.
-
-## Built so far
 
 | Script | Does |
 |---|---|
-| `scripts/check.py` | Reviews a render against its plan and writes `critique.json` |
-| `scripts/frames.py` | Takes the review samples and makes contact sheets, including one at phone width |
-| `scripts/motion_strip.py` | Measures activity per frame, cuts and still holds |
-| `scripts/audio_check.py` | Measures loudness, true peak, clipping, silences and onsets |
-| `scripts/deliver.py` | Writes `DELIVERY.md`; exits non-zero on a stale critique or open blocking findings |
-
-`fixtures/timing/` holds a 5-second test with three plates, two hard cuts and one silence. Each renderer adapter must hit its events within ±2 frames. There are 9 tests, and all pass.
-
-The full design is in [SPEC.md](SPEC.md).
+| `scripts/check.py` | reviews a render or style frames against the plan; writes `critique.json` |
+| `scripts/resolve.py` | records a reviewer decision or an accepted limit |
+| `scripts/deliver.py` | writes `DELIVERY.md` with provenance; exits non-zero on a stale critique or open blocking findings |
+| `scripts/frames.py` | review samples (always frame 0) and contact sheets, including one at phone width |
+| `scripts/motion_strip.py` | activity per frame, cuts and still runs |
+| `scripts/audio_check.py` | loudness, true peak, silences, onsets and bass entries |
+| `scripts/beatmap.py` | a heuristic audiomap for music-led films (numpy only) |
 
 ## Layout
 
 ```
-SKILL.md       the procedure: intake, treatment, score, handoff, review, delivery
-references/    treatment, evidence, score, copy, motion, sound, review, defaults
-adapters/      how the score maps onto HyperFrames, Remotion and Blender
-scripts/       the review scripts
-fixtures/      the timing fixture
+SKILL.md       the six-step workflow
+references/    assets, treatment, evidence, score, copy, motion, sound, toolchain, review, defaults, setup
+adapters/      notes for HyperFrames, Remotion and Blender
+scripts/       review scripts
+fixtures/      a 5-second timing fixture
+tests/         the review regression suite
 ```
 
-## Next
+## Requirements
 
-1. Test film: a fresh agent with only the installed skill makes a film from a real brief. The places where it gets stuck show the gaps in the skill text.
-2. Run each adapter against the timing fixture. At the moment each one says "not yet run".
-3. Proof:
-   - the same brief made with the skill and without it, judged blind
-   - a second brief with different references, to check that the films do not look alike.
+Planning needs nothing installed. Automated review needs Python 3, NumPy, Pillow, ffmpeg and ffprobe ([setup](references/dependencies.md)). Renderers and audio services are optional and chosen per film ([setup](references/tool-setup.md)).
 
 ## What it does not do
 
 - Render video, or generate it with AI video models.
-- Certify aesthetic quality. Scripts measure; judgement stays judgement.
+- Certify aesthetic quality.
 - Character animation or UI micro-interactions.
 
 ## Licence

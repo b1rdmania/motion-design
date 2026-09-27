@@ -1,68 +1,56 @@
 # Motion
 
-Every source on motion craft agrees on one cause of bad motion: animation starts before the idea is decided. "Beautiful isn't an idea" (Giant Ant). Motion is only worth having when it has a job.
+Give movement a purpose that suits the film: explanation, continuity, emphasis, atmosphere, surprise, rhythm or pleasure. A showreel can legitimately foreground craft. What follows is what senior motion designers say and do. It is knowledge to decide with, not a house style.
 
 ## Before anything moves
 
-Felix Hartley's four questions ("Motion design clarity"):
+Every source on motion craft names the same cause of bad motion: animation starts before the idea is decided. "Beautiful isn't an idea" (Giant Ant). Felix Hartley's four questions ("Motion design clarity"):
+
 1. What is the one thing people should remember?
 2. What should they feel?
 3. What can be removed?
 4. Where does animation actually help?
 
-Test each animated element: can you say in one sentence what its motion tells the viewer? If you cannot, cut the motion or the element (David Umoru, "Why motion").
+A useful test for each animated element: can you say in one sentence what its motion tells the viewer? (David Umoru, "Why motion".) If not, the motion is probably decoration.
 
-## What motion is for
+## Decision prompts
 
-In order of value:
-1. **Continuity.** It shows how one state becomes the next.
-2. **Causality and hierarchy.** It shows what leads, what follows and what matters.
-3. **Emphasis.** It lands one moment.
-4. **Delight.** Rarely, and once.
+- **Lead the eye.** What should the viewer look at now? Does competing movement enrich it or obscure it? One focal motion at a time is the usual default. When related elements move together, a short offset (roughly 40–80 ms) shows which one leads. A mechanical index stagger (`i × 100 ms`) is "stagger cosplaying as choreography".
+- **Weight.** Does the acceleration suggest the right weight, mechanism or attitude? Linear motion often reads as cheap, but one ease on everything is just as generic. Fast entrances with a long settle, quicker exits, and linear for continuous loops is a common starting point.
+- **Readability.** Is essential information readable long enough? "A one-second static logo reads. A one-second animated logo is a smear." A hold can still carry camera travel, texture or secondary motion.
+- **Rhythm.** Does the rhythm serve the feeling? Establish, develop, climax, resolve is the usual arc, and uniform pacing is the most common amateur tell. Repetition, metronomic cuts and long stillness are also legitimate choices when they are chosen.
+- **Anticipation and follow-through.** Would a small counter-move before an action, or parts that settle slightly after it, clarify the action or only decorate it?
+- **Transitions.** Does this transition express a relationship? A hard cut, dissolve, wipe, morph or continuous move can each be right. Professional edits are mostly hard cuts. Cutting on action (mid-movement) hides the cut; cutting at rest makes it a statement.
 
-"Everything else is friction disguised as polish."
+## Match cuts
 
-## Craft that carries most of the weight
-
-- **Easing.** Linear motion reads as cheap. Use different curves for different jobs: fast in and long settle for entrances, quicker exits, linear only for continuous loops. One curve on everything is a tell.
-- **Hierarchy in time.** One focal motion at a time. The most important element leads; related elements follow 40–80 ms behind. A mechanical index stagger (`i × 100 ms`) is "stagger cosplaying as choreography". Only stagger things that really are a sequence.
-- **Holds.** "The hold should last at least as long as the build. A one-second static logo reads. A one-second animated logo is a smear." Hold longer than feels natural on important information.
-- **Rhythm.** Establish, develop, climax, resolve. Every source names uniform pacing as the most common amateur tell. Let beat lengths follow their weight.
-- **Anticipation and follow-through.** A small counter-move before an important action. Parts that settle a little after the main body, not all at once.
-- **Staging.** One clear focal point per moment. Keep the key object where the eye already is.
-
-## Transitions
-
-- **Cut** by default. Professional edits are mostly hard cuts. A clean cut reads as a choice.
-- **Match cut:** keep one property constant across the boundary (shape, position, motion vector or colour). Shape is the most forgiving. A near-miss match reads worse than a hard cut. If the shapes are more than about 2 frames of movement apart, or need more than 10% scaling to line up, cut hard.
-- **Morph:** use it when the relationship between two states matters. Pick the layer that matters most, let it lead, and let the rest follow.
-- Cut on action (mid-movement), not at rest.
+A match cut is an edit linked by a shared property: shape, position, action or colour. It can be instantaneous and needs no overlap. Shape is the most forgiving property. A near miss reads worse than a clean hard cut: if the shapes are more than about 2 frames of movement apart, or need more than 10% scaling to line up, cut hard. State the edit mechanism separately from the visual relationship in the score. A pixel-difference detector cannot verify the relationship, so judge the actual boundary.
 
 ## Process
 
-Each stage locks one kind of decision. Review each stage only for its own decision.
+Each stage locks one kind of decision. Review each stage for its own decision.
 
-| Stage | Locks | Reviewed for |
-|---|---|---|
-| Treatment | idea, feeling, references | does it say one thing? |
-| Score | order, timing plan, copy | does each beat have a job? |
-| Style frames | look | brand, focal point, legibility |
-| Animatic | timing | pacing, holds, cuts, sound |
-| Final | craft | everything |
+| Stage | Locks |
+|---|---|
+| Treatment | idea, feeling, references |
+| Score | order, timing, copy |
+| Style frames | look |
+| Animatic | timing |
+| Final | craft |
 
-"The animatic is the single best way to prevent late-stage 'this feels slow' feedback." It is also the stage people skip most. Block big moves first; polish comes last.
+"The animatic is the single best way to prevent late-stage 'this feels slow' feedback", and it is the stage people skip most. Block the big moves first and polish last.
 
 ## Critique vocabulary
 
-| Term | Means | Spot it in frames or the strip |
+Be concrete: the timestamp, the intended reading, what competes with it, and the proposed change. "Feels generated" is not a finding.
+
+| Term | Means | Spot it |
 |---|---|---|
-| Floaty | no weight; drifts at even speed, no settle | no snap on arrival; flat activity with no peaks |
+| Floaty | no weight; drifts at even speed, no settle | no snap on arrival |
 | Dead on arrival | technically fine, wants nothing | you cannot state the motion's job |
-| Too linear | every beat the same length and energy | flat strip; even beat lengths |
-| Everything moves at once | no hierarchy in time | several regions changing in the same frames |
-| No hierarchy | minor elements moving as much as the subject | secondary text scaling or moving like the headline |
+| Too linear | every beat the same length and energy | flat strip, even beat lengths |
+| Everything moves at once | no hierarchy in time | several regions change in the same frames |
+| No hierarchy | minor elements move as much as the subject | secondary text moves like the headline |
 | Style frame to style frame | a crossfade between pretty stills | motion only at the ends of each beat |
 
-## Sameness check
-
-Could these frames serve another brand with a text swap? If yes, the concept is not native to the subject. Fix the idea, not the easing.
+Could these frames serve another brand with a text swap? If so, the concept is not native to the subject. Fix the idea, not the easing.

@@ -1,58 +1,55 @@
 # Copy for video
 
-On-screen text and VO. The one rule the sources agree on: **the line says what the picture cannot.**
+On-screen text and VO. What follows is what experienced copywriters do and why. It is knowledge to decide with, not a blacklist. Break any of it on purpose when the film is better for it.
 
 ## The line and the picture
 
-- If the frame already shows the action, the line should not describe it. Give the viewer what the image cannot show: a number, a comparison, a consequence, or a reframe. A super that says "Fast onboarding" over a demo of fast onboarding is redundant twice.
+The one rule every source agrees on: **the line says what the picture cannot.**
+
+- If the frame already shows the action, the line usually should not describe it. Give the viewer what the image cannot show: a number, a comparison, a consequence, or a reframe. A super that says "Fast onboarding" over a demo of fast onboarding is redundant twice. A repeated label can still earn its place for accessibility or recognition.
 - "Headlines counterpoint the image, directing its interpretation" (Barnaby Benson, "Writing Headlines").
 - Proof beats claims. Dave Trott: "Demonstration, not empty claims." Let the image carry the proof, and keep the copy out of its way.
 - A fact beats an adjective. D&AD (Vikki Ross): "Anyone can say something is 'amazing', but what's the fact?"
-- Cut any line whose only job is to name a feeling ("feel confident"). If the feeling needs a caption, the image has not done its job.
+- A line whose only job is to name a feeling ("feel confident") usually means the image has not done its job.
 - A film can have no VO. Linear's "Introducing Linear for Agents" has none: cut rhythm and kinetic type carry it.
-
-## Budgets (defaults)
-
-| Measure | Default | Source |
-|---|---|---|
-| Super reading speed | ≤ 17 characters per second of hold | Netflix Timed Text Style Guide (17–20 cps adult) |
-| Hard limit (blocks) | 25 cps | above the rate where BBC R&D viewers reported "too fast" (≈ 227 wpm) |
-| Line length | ≤ 42 characters, ≤ 2 lines | Netflix |
-| VO | ≤ 2.5 words per second of film; ~75 words in 30 s | ad practice: write 150, cut to 75 |
-| Hold time | characters ÷ 17 seconds, minimum 0.8 s | derived from the above |
-
-Type-led launch films snap or cut their text in, hold it for its reading time, then cut it away. They do not drift it in slowly from zero opacity by default.
 
 ## Structure
 
-- Write the last beat first.
-- One promise and one proof point. Three value props in 30 s is a structural failure, not a style problem.
-- Keep the brand name out of the opening beat. Earn it after the hook.
+- Writing the last beat first clarifies what the film is for.
+- One promise and one proof point is the usual shape of a short film. Three value props in 30 s is typically a structural failure, not a style problem.
+- The brand name often lands harder after the hook than before it. Early branding is a choice, not a fault.
 - A CTA can only ask for what the film has earned. A feature tour cannot support "buy now".
-- If a tagline is part of the film and the film has VO, speak it. Ipsos found text-only taglines barely moved perception; the same line voiced did.
+- If the film has VO and a tagline, speaking the tagline helps. Ipsos found text-only taglines barely moved perception; the same line voiced did.
 
-## Four tests for every line
+## Reading time
 
-1. **Generic.** Could this line appear for any product? If so, rewrite it with specifics.
+| Measure | Value | Source | Status |
+|---|---|---|---|
+| Comfortable reading speed | ≤ 17 characters per second of hold | Netflix Timed Text Style Guide (17–20 cps adult) | prompt |
+| Planned reading-speed gate | 25 cps | above the rate where BBC R&D viewers reported "too fast" (≈ 227 wpm) | **blocks by default**; set `delivery.max_text_cps` to change it |
+| Subtitle convention | ≤ 42 characters, ≤ 2 lines | Netflix | subtitles only; not a limit on title cards or kinetic type |
+| VO | about 2.5 words per second of film; ~75 words in 30 s | ad practice: write 150, cut to 75 | prompt |
+
+The gate checks the **plan's** timing. It cannot prove the rendered text appeared or was readable; the review checks that on the frames. Audience, type size, familiarity and visual competition all change real reading effort.
+
+Type-led launch films mostly snap or cut their text in, hold it for its reading time, then cut it away, rather than drifting it in slowly from zero opacity.
+
+## Four tests for a line
+
+1. **Generic.** Could this line appear for any product? If so, make it specific.
 2. **Read aloud.** Does it sound like a person or a press release?
 3. **So what.** Would the viewer think "so what"? If so, add the concrete outcome.
 4. **Specific.** Is there a number, a scene or a named detail?
 
-## Stock phrases (flagged as advice by check.py)
+## Familiar phrasing
 
-Openers: "Introducing…", "Meet…", "Say goodbye to…", "Imagine a world where…", "In today's fast-paced world…", "What if I told you…", "The future of X is here".
+`check.py` flags stock openers ("Introducing…", "Meet…", "Say goodbye to…", "Imagine a world where…") and filler ("harness the power of", "game-changer", "seamless", "unlock", "next level"). This is a prompt, not a ban. Keep a phrase when it is the best fit; replace it when it is empty or interchangeable.
 
-Filler: "harness the power of", "game-changer", "next level", "single source of truth", "we've got you covered", "it's that simple", "but that's not all", "unlock", "seamless", "revolutionise".
-
-| Instead of | Write |
+| Instead of | Try |
 |---|---|
-| "Introducing X" | Open on the problem or the result. Name X once it is earned. |
-| "Meet X, the all-in-one solution" | The one specific thing it does, with a number. |
-| "Say goodbye to [pain]" | Show the before and after; the line carries only the fact the image cannot. |
-| "Imagine a world where…" | Show the result. Caption it with the fact. |
-| "Harness the power of AI" | Name the mechanism or the outcome. |
-| A super restating the action | A number, a consequence or a reframe. |
+| "Introducing X" | open on the problem or the result, and name X once it is earned |
+| "Meet X, the all-in-one solution" | the one specific thing it does, with a number |
+| "Say goodbye to [pain]" | show the before and after; the line carries only the fact the image cannot |
+| "Harness the power of AI" | name the mechanism or the outcome |
 
-## After writing
-
-Run a plain-English pass on every super and VO line. Cut a third.
+After writing, run a plain-English pass on every super and VO line. Cut what does not work.

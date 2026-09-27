@@ -1,26 +1,16 @@
-# Defaults
+# Optional review prompts
 
-Craft numbers from the research. They give advice only and never block delivery. To break one on purpose, add it to `score.overrides` with a reason:
+No craft heuristic blocks delivery. These values are uncalibrated prompts, not research-established universal rules. A creator may retain a deliberate choice without writing an exception for every beat.
 
-```json
-"overrides": [{"rule": "default.pace_varies", "reason": "metronomic cut; the rhythm is the joke"}]
-```
+| Rule | Prompt |
+|---|---|
+| `default.super_speed` | Planned text above 17 characters/second: inspect reading effort at intended size. |
+| `default.vo_budget` | More than 2.5 planned words/second: time and listen to the actual narration. |
+| `default.stock_copy` | Familiar template phrasing: is it useful here or empty? |
 
-None of these values has been calibrated against real films yet. `check.py` marks them "not calibrated".
+Rhythm hints run only when requested via `score.review_hints`:
 
-| Rule | Default | Why | Source |
-|---|---|---|---|
-| `default.hold_ge_build` | hold ≥ build | "A one-second static logo reads. A one-second animated logo is a smear." | title-sequence design practice (thelogocreative.co.uk) |
-| `default.no_short_animation` | a beat under 1 s does not animate; cut to the resolved state | a sub-second build never resolves in the eye | as above |
-| `default.pace_varies` | coefficient of variation of beat lengths ≥ 0.25 | uniform pacing is the most common amateur tell | editing craft; School of Motion |
-| `default.cut_on_phrase` | music-led films cut within 2 frames of a beat or phrase | cuts off the grid feel accidental | frames per beat = (60 ÷ BPM) × fps |
-| `default.super_speed` | ≤ 17 characters per second | adult subtitle norm | Netflix Timed Text Style Guide |
-| `default.super_shape` | ≤ 42 characters per line, ≤ 2 lines | a third line is a second beat | Netflix |
-| `default.vo_budget` | ≤ 2.5 VO words per second of film | ~75 words in a 30 s spot | ad practice |
-| `default.stock_copy` | none of the stock openers or filler in `copy.md` | the phrases mark the copy as template output | copy research |
-| `default.no_silence_at_top` | no planned silence in the first 0.5 s | autoplay starts muted | short-form editing practice |
+- `default.pace_varies`: flags beat-duration variation below 0.25 for discussion; uniform rhythm is not a failure.
+- `default.cut_on_phrase`: with a supplied audiomap and music-led score, flags cuts more than two frames from a supplied beat/phrase. Off-grid cuts may be intentional; the map does not determine good editing.
 
-Defaults that are not scripted, but worth knowing:
-- Stagger related elements by 40–80 ms. Newly appearing siblings start no more than about 20 ms apart (Material motion).
-- Anticipation runs 50–150 ms before a UI-scale action.
-- Hold one to three key moments with effects. Hard cuts everywhere else.
+`overrides: [{rule, reason}]` remains available to suppress recurring prompts. Existing override records remain valid. Older hints for short animation, silence at the start and hold/build ratios are retired; these are creative choices rather than default faults.
