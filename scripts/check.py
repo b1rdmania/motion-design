@@ -228,6 +228,11 @@ def evidence(r: Review, ledger: dict, stage: str = "final"):
                       evidence=f"sample/illustrative {i}; limits: {c.get('limits', '—')}",
                       fix="confirm the film does not present sample data or mock UI as a real result")
             pw = c.get("permitted_wording")
+            cues = text_cues(b)
+            if any("claim" in q for q in cues):  # cues name their claim: compare only the words stating it
+                words = " ".join([q.get("text", "") for q in cues if q.get("claim") == i] + [vo]).strip()
+            else:
+                words = f"{sup} {vo}".strip()
             if pw and words and pw.lower() not in words.lower() and words.lower() not in pw.lower():
                 r.add("evidence.permitted_wording", "needs_review", True, beat=b["id"], t=b["start"],
                       evidence=f"on screen: '{words}'; permitted: '{pw}'",
@@ -311,11 +316,10 @@ def sound(r: Review, audio: dict, delivery: dict, events: list[dict], stage: str
 
 def fidelity(r: Review, strip: dict, audio: dict, events: list[dict], stage: str):
     fps = float(r.score.get("fps", 24))
-    tol = 2.0 / fps
     cuts = [c["t"] for c in strip.get("cuts", [])]
     for e in events:
         t, kind = float(e["t"]), e["type"]
-        tol = float(e.get("tolerance_frames", 2)) / fps
+        tol = float(e.get("tolerance_frames", 2)) / fps  # per event; never leaks into other checks
         beat = e.get("beat") or beat_at(r.score, t)
         if kind == "cut":
             near = min((abs(c - t) for c in cuts), default=None)
@@ -342,14 +346,20 @@ def fidelity(r: Review, strip: dict, audio: dict, events: list[dict], stage: str
                   evidence=(f"nearest onset (broadband or below 150 Hz) {near:.3f}s away" if near is not None
                             else "no onset detected"),
                   fix=None if ok else "confirm the hit lands; onset detection is a hint, not a measurement")
-    planned = [float(e["t"]) for e in events if e["type"] == "cut"]
+    planned = [(float(e["t"]), float(e.get("tolerance_frames", 2)) / fps) for e in events if e["type"] == "cut"]
     footage_spans = [(b["start"], b["start"] + b["dur"]) for b in r.score.get("beats", []) if b.get("footage")]
     for c in cuts:
         if any(s <= c < e for s, e in footage_spans):
             continue  # cuts inside embedded footage belong to that footage; fidelity.footage covers it
-        if not any(abs(c - p) <= tol for p in planned):
+        if not any(abs(c - p) <= ptol + 1e-6 for p, ptol in planned):
             r.add("fidelity.unplanned_cut", "needs_review", False, t=c, beat=beat_at(r.score, c),
                   evidence=f"cut detected at {c}s with no planned cut", fix="a flash, a pop or an unplanned edit?")
+    if r.score.get("camera") == "continuous":
+        if stage != "style_frames":
+            r.add("fidelity.hold", "not_applicable", False, method="plan",
+                  evidence="score declares camera: continuous; every hold carries camera travel by design",
+                  fix="readability of text during the move is still checked in beat.review")
+        return
     for b in r.score.get("beats", []):
         hold = float((b.get("motion") or {}).get("hold", 0) or 0)
         if hold <= 0 or stage == "style_frames" or b.get("footage"):
@@ -391,12 +401,26 @@ def beat_review(r: Review, stage: str, sheet: str | None):
               fix="Inspect the beat and settle every item in one resolution. If any item fails, mark fail and name it.")
 
 
+def music_track(r: Review, plan: Path):
+    """The delivery note cites score.music.track; a missing file found only at delivery
+    cannot be fixed without changing the plan hash and invalidating the review."""
+    track = (r.score.get("music") or {}).get("track")
+    p = Path(track or "")
+    if not track or not p.suffix:  # a description ("sine 440 Hz test tone"), not a file
+        return
+    found = p if p.is_absolute() else next((q for q in (plan.parent / p, plan / p) if q.exists()), None)
+    ok = found is not None and found.exists()
+    r.add("plan.music_track", "pass" if ok else "fail", False, method="plan",
+          evidence=f"music.track '{track}' {'found' if ok else 'not found relative to the project folder'}",
+          fix=None if ok else "point music.track at the file used in the mix before review; the delivery note cites it")
+
+
 def frame_alignment(r: Review):
     fps = float(r.score.get("fps", 24))
     off = []
     for b in r.score.get("beats", []):
         frames = float(b["start"]) * fps
-        if abs(frames - round(frames)) > 0.01:
+        if abs(frames - round(frames)) > 0.005:  # float noise is ~1e-9; 4.367 s at 30 fps is 0.01 off
             off.append(f"{b['id']} starts at frame {frames:.2f}; use {round(frames) / fps:.4f}s")
     r.add("plan.frame_aligned", "needs_review" if off else "pass", False, method="plan",
           evidence="; ".join(off) if off else "every beat starts on a whole frame",
@@ -499,16 +523,18 @@ def judged(r: Review, stage: str, sheet: str | None, strip_png: str | None):
     beats = r.score.get("beats", [])
     if stage in ("style_frames", "final"):
         r.add("judged.reel_bar", "needs_review", False, evidence=f"see {sheet}", method="inspection",
-              fix="Would this go first in a senior motion designer's showreel? Name what holds it back.")
+              fix="Only once the film is understood (cold_viewer, story): would this go first in a senior motion "
+                  "designer's showreel? Name what holds it back, and the layer it lives in: story, treatment or execution.")
     if stage in ("animatic", "final"):
         r.add("judged.cold_viewer", "needs_review", False, method="inspection",
               evidence="a reader with no plan context, frames only",
               fix="Who is it for (by 0:05)? What is it? What do I do next? What moment do I remember? "
-                  "Compare with the treatment's intake answers.")
+                  "Compare with the spine: whose problem, what the product does, what changes. "
+                  "If the reader gets these wrong, the fix is in the story or treatment, not the polish.")
     if stage == "final":
         r.add("judged.story", "needs_review", False, method="inspection",
               evidence="the chosen telling, proposition and last beat in plan/treatment.md",
-              fix="Watching as the viewer would: does the story from step 3 come through?")
+              fix="Watching as the viewer would: does the spine from step 3 come through?")
     if stage in ("style_frames", "final"):
         for b in beats:
             r.add("judged.frame", "needs_review", False, beat=b["id"], t=b["start"],
@@ -607,6 +633,7 @@ def main() -> None:
             footage(r, a.video, a.plan, info)
 
     frame_alignment(r)
+    music_track(r, a.plan)
     communication(r, a.stage, sheet)
     evidence(r, ledger, a.stage)
     beat_review(r, a.stage, sheet)

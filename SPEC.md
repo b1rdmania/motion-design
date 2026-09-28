@@ -1,6 +1,6 @@
 # motion-design: v1 spec
 
-Author: Andy Bird. Version 4, 27 September 2026. Version 3 (Codex) made providers optional and the review evidence-based. Version 4 restores discovery and narrative development as the core, the forcing decisions that changed the first test film, a quality bar, and toolchain choice for quality.
+Author: Andy Bird. Version 5, 28 September 2026. Version 5 puts a plain story spine, agreed with the user, ahead of any telling; puts comprehension ahead of the showreel bar; and makes revisions fix the layer that failed. Version 3 (Codex) made providers optional and the review evidence-based. Version 4 restores discovery and narrative development as the core, the forcing decisions that changed the first test film, a quality bar, and toolchain choice for quality.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Help a user turn a business story, often an unclear one, into a narrative, and t
 
 1. **Understand the business.** Read the supplied material and collect the real assets (`assets.json`) before asking anything it already answers.
 2. **Audience and stakes.** Who watches, why they should care, what should change after they watch, and the tone and placement.
-3. **Develop the narrative together.** Two or three structurally different tellings, each with an opening, a progression and an ending in plain language. The user chooses or steers.
+3. **Develop the narrative together.** First a plain spine (situation → problem → turn → what changes, about a person), which the user rewrites and agrees. Then two or three structurally different tellings of that spine, one of them the plainest honest version. A device must make the spine clearer or it goes. The user chooses or steers.
 4. **Visual treatment.** Composition, typography, references (take and leave), craft, motion, pacing, sound, the lead, and a toolchain chosen per shot for quality. Style frames before the expensive build.
 5. **Build** with the strongest workflow available, keeping its motion craft. The plan owns what and when; the tools own how.
 6. **Does it land?** Judge the communication and the execution against the bar. Scripts support the judgement.
@@ -33,7 +33,7 @@ The usual full path is treatment/evidence → timed score → representative sty
 
 The plan comprises `treatment.md`, `score.json` and `evidence.json`; its version hashes all three. The reference files are the authoritative field definitions rather than a second schema here:
 
-- `references/treatment.md`: a template. Forcing decisions: tellings considered (unless the user supplied the concept), refusal, last beat first, references with take and leave, craft, and toolchain with reasons. A conjunction is fine when it names one condition. Taste stays in overridable defaults, not rules.
+- `references/treatment.md`: a template. Forcing decisions: the spine, tellings considered (unless the user supplied the concept), refusal, last beat first, references with take and leave, craft, and toolchain with reasons. A conjunction is fine when it names one condition. Taste stays in overridable defaults, not rules.
 - `references/assets.md`: asset intake from the project (repo, brand doc, font files, SVGs, images) into `assets.json`, with source and licence; fonts loaded from files.
 - `references/evidence.md`: facts, inferences, metaphors and samples (mock UI, sample data), sources, permitted wording and limits. Source-field completeness is not truth verification.
 - `references/score.md`: seconds-based beat and cue timing, readable intervals, edit mechanisms and continuity relationships, sound and mandatory commitments. Supports continuing motion and multiple text/sound cues; legacy super/transition strings remain accepted.

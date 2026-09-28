@@ -22,9 +22,11 @@ def section(video: Path, crit_path: Path, plan: Path) -> tuple[list[str], bool]:
     lines = [f"## {video.name}", ""]
     if crit is None:
         return lines + [f"No critique at `{crit_path}`. Not reviewed.", ""], False
-    digest = sha256_file(video)
     ok = True
     problems = []
+    if not video.exists():
+        return lines + [f"Render `{video}` not found. Cannot match it to the critique. NOT CLEAR.", ""], False
+    digest = sha256_file(video)
     if crit.get("stage") != "final":
         problems.append(f"latest critique is stage `{crit.get('stage')}`, not `final`")
     if crit.get("render_sha256") != digest:
