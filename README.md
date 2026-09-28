@@ -13,7 +13,7 @@ Agents can now build clean video in code. The result still looks generated: text
 ```mermaid
 flowchart TD
     A[1. Understand the business: read material, collect real assets] --> B[2. Audience and stakes]
-    B --> C[3. Develop the narrative together: 2-3 tellings, user chooses]
+    B --> C[3. Develop the narrative together: plain spine, then 2-3 tellings, user chooses]
     C --> D[4. Visual treatment + evidence + timed score + toolchain]
     D --> E[Style frames]
     E --> F[5. Build with the strongest tools, keeping their motion craft]

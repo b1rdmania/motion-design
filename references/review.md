@@ -55,9 +55,13 @@ Inspect the beat, then settle it with one resolution that addresses every item. 
 
 ## Does it land (judged)
 
+Judge in this order: comprehension, then story, then craft. Do not spend effort on the showreel bar while a cold viewer cannot say whose problem this is, what the product does and what changes.
+
 - `judged.cold_viewer` (animatic and final): check each concrete claim a cold reader makes against the frames before acting on it; cold readers also misread. A fresh reader who sees only the frames (a subagent when available) says who the film is for, what it is, what to do next, and the moment they remember. Compare the answers with the treatment's intake. In testing, a blind judge preferred a plainer film that named its viewer in the first second over a better-designed one that did not.
 - `judged.story` (final): watching as the viewer would, does the telling chosen in step 3 come through?
-- `judged.reel_bar` (style frames and final): would this go first in a senior motion designer's showreel? Name what holds it back. "Competent" is a fail of the bar, not a pass.
+- `judged.reel_bar` (style frames and final): once the film is understood, would this go first in a senior motion designer's showreel? Name what holds it back. "Competent" is a fail of the bar, not a pass.
+
+When a judged finding fails, name the layer before revising: story (wrong person, problem or product), treatment (right story, frames do not carry it) or execution (right plan, weak build). Revise that layer. A bigger camera move cannot fix an unclear story.
 - `judged.frame`, `judged.reskin`, `judged.transition`, `judged.pacing`: the craft questions per beat.
 
 These do not block delivery on their own. They are where the film gets better, so settle them honestly.

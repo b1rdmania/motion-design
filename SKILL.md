@@ -44,14 +44,14 @@ Competent is not the bar. If the result would pass as a good template, it has no
 |---|---|---|
 | 1. Understand the business | `plan/assets.json`, notes | reading |
 | 2. Audience and stakes | answers in the treatment | conversation |
-| 3. Develop the narrative together | chosen telling, last beat | conversation |
+| 3. Develop the narrative together | plain spine, chosen telling, last beat | conversation |
 | 4. Visual treatment | `plan/treatment.md`, `plan/evidence.json`, `plan/score.json`, style frames | design |
 | 5. Build | draft and final renders | the strongest toolchain |
 | 6. Does it land? | `review/*/critique.json`, `DELIVERY.md` | judgement, supported by scripts |
 
 To **review an existing film**, skip to step 6 and use its existing plan. If there is no timed plan, give a qualitative review and say which checks cannot run.
 
-**How much to ask.** The conversation is central when the story is unresolved. When the user arrives with a clear brief, keep it light: confirm what you read, ask only what is missing, and move on. If the user has said to go ahead without them, make the calls yourself and mark them as assumed. Do not skip steps 2 and 3 just because you could guess.
+**How much to ask.** The conversation is central when the story is unresolved. When the user arrives with a clear brief, keep it light: confirm what you read, ask only what is missing, and move on. If the user has said to go ahead without them, make the calls yourself and mark them as assumed. Do not skip steps 2 and 3 just because you could guess. The spine in step 3 always goes to the user if they are present.
 
 `SKILL_DIR` means this directory. The project folder is wherever the user's film lives; it holds `plan/`, `renders/`, `review/` and `DELIVERY.md`. Run the scripts from there. Never report a review you did not perform.
 
@@ -80,16 +80,31 @@ Discuss tone and placement. If the positioning itself is unresolved, say so and 
 
 ## 3. Develop the narrative together
 
-Offer two or three **genuinely different** ways to tell the story. Different means a different structure, not a different colour scheme. For each, in plain language:
+Agree the story before any idea for showing it.
 
-- **Opening:** what the viewer sees and hears in the first three seconds, and why they keep watching.
-- **Progression:** how the tension builds or the argument turns.
+**First, the plain spine.** Write the story in four plain sentences, about a real kind of person in the audience:
+
+- **Situation:** who they are and what they are doing.
+- **Problem:** what goes wrong, in their words. Use the stakes answer from step 2.
+- **Turn:** what changes it. This is usually where the product enters.
+- **What changes:** what is different for them afterwards.
+
+It must work read aloud, with no visual idea attached. If it does not make sense to someone who has never seen the product, no device will fix it. Check each sentence against what the product can actually prove (`references/evidence.md`); a spine that implies a result the product does not deliver is wrong before any frame exists.
+
+Show the spine to the user and let them rewrite it. This is the most important decision in the film, and the user should own it. Do not offer tellings until it is agreed. If the user said to go ahead without them, write it yourself and mark it *(assumed)*.
+
+**Then, two or three tellings of that spine.** A telling is how the film shows the agreed story, not a new story. Different tellings have a different structure, not a different colour scheme. For each, in plain language:
+
+- **Opening:** what the viewer sees and hears in the first three seconds. Frame 0 is the thumbnail a muted scroller sees, so it must say who the film is for or what the problem is.
+- **Progression:** how it moves through the spine.
 - **Ending:** the last image, line and sound, and what the viewer does next.
 - **One line** on why it fits this audience.
 
-Recommend one, and let the user choose or steer. Your first idea is usually the average of every video in its category, so push at least one option away from it. If the user supplied a concept, develop it; do not reject it for show.
+Make at least one telling the plainest honest version: the person, the problem, the product, the change. A device (an object, a metaphor, a visual conceit) is allowed only when it makes the spine clearer or more felt. Test it: if you removed the device, would the spine be lost? If not, the device is decoration. Avoid the category average (the feature tour, the stock montage), but do not escape it with cleverness the viewer has to decode.
 
-Write the chosen telling, the proposition (one central idea), the refusal (what the film will not do) and the last beat into the treatment.
+Recommend one, and let the user choose or steer. If the user supplied a concept, develop it; do not reject it for show.
+
+Write the spine, the chosen telling, the proposition (one central idea), the refusal (what the film will not do) and the last beat into the treatment.
 
 ## 4. Visual treatment
 
@@ -130,7 +145,7 @@ Put beat starts on whole frames. Declare hard cuts, silences and hits in `events
 
 An explicit user choice wins, and a suitable existing toolchain stays. Record each choice and its reason in the treatment. If the best tool is missing, say what it would add, then set it up (`references/tool-setup.md`) or record the compromise.
 
-Show the user representative **style frames** before the expensive build: one still per key beat at final size, checked at viewing width. Make the signature moment one of them. Present the treatment, the beat table and the frames. Wait for approval, unless the user said to go ahead without them.
+Show the user representative **style frames** before the expensive build: one still per key beat at final size, checked at viewing width. Make the signature moment one of them. If it happens over time (a strike, a snap, a transform), show a before and after pair or a short loop. Present the treatment, the beat table and the frames. Wait for approval, unless the user said to go ahead without them.
 
 ## 5. Build
 
@@ -140,7 +155,7 @@ Load brand fonts from the supplied files, so the renderer cannot substitute them
 
 ## 6. Does it land?
 
-Judge two things: does the film communicate what step 3 decided, and is the execution at the bar? The scripts support that judgement; they do not replace it.
+Judge two things, in this order: does the film communicate the spine from step 3, and only then, is the execution at the bar? A beautiful film that does not make sense has failed. The scripts support that judgement; they do not replace it.
 
 ```
 python3 SKILL_DIR/scripts/check.py --plan plan --stills renders/style --stage style_frames --out review/style_frames-r1
@@ -150,19 +165,22 @@ python3 SKILL_DIR/scripts/check.py --plan plan --video renders/final.mp4 --stage
 
 Pass `--audiomap` for a music-led film (`python3 SKILL_DIR/scripts/beatmap.py track.wav --out plan/audiomap.json` writes one). Then, using `references/review.md`:
 
-1. **Watch it as the viewer would.** Open individual frames at viewing width, starting with frame 0: it is the thumbnail a muted scroller sees. Ask:
-   - Does the story from step 3 come through?
-   - Would this go first in a showreel (`judged.reel_bar`)?
-2. **Get a cold read** (`judged.cold_viewer`). You know the plan, so you cannot see the film as a stranger does. If you can start a subagent, give a fresh one only the frames, sampled at about 4 per second (no plan, no brief, no treatment). Ask it:
+1. **Get a cold read first** (`judged.cold_viewer`). You know the plan, so you cannot see the film as a stranger does. If you can start a subagent, give a fresh one only the frames, sampled at about 4 per second (no plan, no brief, no treatment). Ask it:
    - Who is this for?
    - What is it?
    - What should I do next?
    - What was the one moment you remember?
 
-   Check its concrete claims against the frames before acting on them; cold readers misread too. If you cannot start one, answer those questions strictly from the frames, as if you had never seen the plan. A film that is well made but unclear fails this: a blind judge preferred a plainer film that said who it was for in its first second.
+   Compare the answers with the spine: whose problem is it, what does the product do, what changes? Check the reader's concrete claims against the frames before acting on them; cold readers misread too. If you cannot start one, answer those questions strictly from the frames, as if you had never seen the plan. A film that is well made but unclear fails this: a blind judge preferred a plainer film that said who it was for in its first second.
+2. **Then watch it as the viewer would.** Open individual frames at viewing width, starting with frame 0: it is the thumbnail a muted scroller sees. Does the spine come through (`judged.story`)? Only when it does, ask whether this would go first in a showreel (`judged.reel_bar`).
 3. **Settle each `needs_review` finding** with `scripts/resolve.py`, saying what you inspected. If you cannot tell (for example, you cannot listen), leave it open.
 4. **Record accepted limits** with `resolve.py --accept-limit "..."`, so they reach the delivery note.
-5. **Fix and re-render.** Blocking problems come first. Then, if `judged.reel_bar` fails, spend a revision round lifting the film towards the bar, usually the signature moment, before accepting it. Name what holds it back; do not just record it.
+5. **Fix the layer that failed, and re-render.** Blocking problems come first. For a judged failure, first decide where it lives:
+   - **Story:** the cold reader got the wrong person, problem or product. Go back to the spine or the telling. Camera, light and polish cannot fix this.
+   - **Treatment:** the story is right but the frames do not carry it (the idea is hidden, the device needs decoding, the signature moment is decoration). Revise the treatment and style frames.
+   - **Execution:** the plan is right but the build falls short (type, light, timing, motion). Fix the build.
+
+   Spend a revision round on the layer you diagnosed. If `judged.reel_bar` fails after comprehension passes, name what holds it back and spend a round there before accepting. Judge a revision by whether it fixes the diagnosed problem, not by how big it is.
 
 Review volume: when one inspection genuinely covers several findings, settle them together (`resolve.py --rule <rule> [--beat <id>]`). Evidence decisions carry across renders of the same plan (`resolve.py --carry-from <earlier critique.json>`). Never batch-pass what you did not look at.
 

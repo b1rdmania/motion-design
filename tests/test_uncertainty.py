@@ -175,3 +175,76 @@ def test_quiet_mix_without_explicit_target_is_advice():
     r = check.Review(score(), {}); check.sound(r, a, {'audio': True}, [], 'final')
     assert not finding(r, 'sound.loudness')['blocking']
     assert finding(r, 'sound.loudness')['status'] == 'needs_review'
+
+
+def test_event_tolerance_does_not_leak_into_unplanned_cut_check():
+    s = score()
+    s['beats'][0]['dur'] = 4
+    r = check.Review(s, {})
+    events = [{'type': 'cut', 't': 1.0}, {'type': 'hit', 't': 3.0, 'tolerance_frames': 100}]
+    check.fidelity(r, {'cuts': [{'t': 1.0}, {'t': 2.5}]}, {'has_audio': True, 'onsets': [3.0]}, events, 'final')
+    unplanned = [f for f in r.findings if f['rule'] == 'fidelity.unplanned_cut']
+    assert [f['t'] for f in unplanned] == [2.5]
+
+
+def test_continuous_camera_skips_hold_heuristic_once():
+    s = score()
+    s['camera'] = 'continuous'
+    s['beats'][0]['motion'] = {'build': 0, 'hold': 2}
+    r = check.Review(s, {})
+    check.fidelity(r, {'cuts': [], 'still_runs': []}, {'has_audio': False}, [], 'final')
+    holds = [f for f in r.findings if f['rule'] == 'fidelity.hold']
+    assert [f['status'] for f in holds] == ['not_applicable']
+
+
+@pytest.mark.parametrize('start,flagged', [(4.367, True), (4.3667, False), (131 / 30, False)])
+def test_frame_alignment_flags_the_documented_off_frame_value(start, flagged):
+    s = {'fps': 30, 'beats': [{'id': 'b1', 'start': start, 'dur': 1}]}
+    r = check.Review(s, {})
+    check.frame_alignment(r)
+    assert (finding(r, 'plan.frame_aligned')['status'] == 'needs_review') is flagged
+
+
+def test_deliver_reports_a_missing_render_instead_of_crashing(tmp_path):
+    crit = tmp_path / 'critique.json'
+    crit.write_text(json.dumps({'stage': 'final', 'findings': []}))
+    lines, ok = deliver.section(tmp_path / 'gone.mp4', crit, tmp_path)
+    assert not ok and any('not found' in line for line in lines)
+
+
+def test_permitted_wording_compares_only_the_cue_that_states_the_claim():
+    s = score()
+    s['beats'][0].pop('super')
+    s['beats'][0]['proves'] = 'c1'
+    # The claim is printed on a sleeve in the picture; the only super is the audience line.
+    s['beats'][0]['text_cues'] = [
+        {'text': 'For people who read the back of the sleeve', 'start': 0, 'hold': 2, 'claim': None}]
+    ledger = {'claims': [{'id': 'c1', 'type': 'fact', 'source': 'db', 'evidence': 'row 1',
+                          'permitted_wording': 'Remixed by Monolake'}]}
+    r = check.Review(s, {})
+    check.evidence(r, ledger, 'final')
+    assert not [f for f in r.findings if f['rule'] == 'evidence.permitted_wording']
+    # A cue that does state the claim is still held to the permitted wording.
+    s['beats'][0]['text_cues'].append({'text': 'Remix by Monolake', 'start': 0, 'hold': 2, 'claim': 'c1'})
+    r = check.Review(s, {})
+    check.evidence(r, ledger, 'final')
+    assert [f for f in r.findings if f['rule'] == 'evidence.permitted_wording']
+
+
+def test_missing_music_file_is_caught_at_plan_time(tmp_path):
+    plan = tmp_path / 'plan'
+    plan.mkdir()
+    s = score()
+    s['music'] = {'track': 'audio/music.wav'}
+    r = check.Review(s, {})
+    check.music_track(r, plan)
+    assert finding(r, 'plan.music_track')['status'] == 'fail'
+    (tmp_path / 'audio').mkdir()
+    (tmp_path / 'audio' / 'music.wav').write_bytes(b'')
+    r = check.Review(s, {})
+    check.music_track(r, plan)
+    assert finding(r, 'plan.music_track')['status'] == 'pass'
+    s['music'] = {'track': 'sine 440 Hz test tone'}
+    r = check.Review(s, {})
+    check.music_track(r, plan)
+    assert not [f for f in r.findings if f['rule'] == 'plan.music_track']

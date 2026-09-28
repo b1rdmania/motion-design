@@ -71,4 +71,4 @@ Also run `npx hyperframes check` before each render. It catches overflow, collis
 
 Read `transition_in.type` for the edit mechanism and `relationship` for visual continuity. Legacy `match:<property>` means a cut with a relationship, not a compulsory dissolve. Keep total duration fixed when adding overlap. Use the intended delivery size for each composition and review each final format.
 
-**Fonts.** HyperFrames substitutes a font when the family name does not resolve: in testing, a logo's Helvetica Neue rendered as Inter. Declare each brand font with `@font-face` pointing at the file from `assets.json`, and check the style frames for it.
+**Fonts.** HyperFrames substitutes a font when the family name does not resolve: in testing, a logo's Helvetica Neue rendered as Inter. Declare each brand font with `@font-face` pointing at the file from `assets.json`, and check the style frames for it. HyperFrames' own checks can pass while a font falls back: in testing, an extra face with a weight range and a `unicode-range` stopped the regular weights loading. Before rendering, confirm in the page that every entry in `document.fonts` has status `loaded`.

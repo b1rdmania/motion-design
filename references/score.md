@@ -64,6 +64,9 @@
 | `beats[].transition_in` | An edit object `{type, relationship?, duration?}`; types include cut, dissolve, wipe, morph, continuous, custom. Legacy strings remain accepted. |
 | `beats[].commitments` | Mandatory items, for example "logo from brand/logo.svg" or "exact copy". Each one is checked by eye. |
 | `events[]` | Detectable events only: `cut`, `silence` (with `dur`) and `hit`. A beat with a cut mechanism adds a cut event automatically, including legacy `match:<property>`. Each event can set `tolerance_frames` (default 2). |
+| `beats[].text_cues[].claim` | Optional. The evidence id this cue states, or `null` for a cue that states no claim. When any cue in a beat sets it, `evidence.permitted_wording` compares each claim only with the cues that state it (and the voiceover), so an audience line is not checked against a claim shown in the picture. |
+| `camera` | Optional. `"continuous"` for a film that is one unbroken camera move. The pixel-difference hold check is skipped once for the whole film, because every hold carries camera travel. Readability is still checked per beat. |
+| `music.track` | A file path relative to the project folder, or a description. A path is checked at every stage, because the delivery note cites it. |
 | `overrides[]` | Defaults this film breaks on purpose, with a reason |
 
 A match cut can be instantaneous. For example, `{"type":"cut","relationship":"same circular shape"}` declares a cut to detect and a relationship to inspect. A morph need not contain a cut. Detector misses are uncertain, not proof of a timing failure.

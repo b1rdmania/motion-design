@@ -38,11 +38,13 @@ This FFmpeg example ducks music under narration. Values are illustrative; use th
 film_duration=30
 ffmpeg -i music.wav -i vo.wav -filter_complex \
   "[0:a]apad,atrim=duration=${film_duration}[music];[1:a]apad,atrim=duration=${film_duration},asplit=2[side][voice];[music][side]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=300[m];[m][voice]amix=inputs=2:normalize=0,apad,atrim=duration=${film_duration},loudnorm=I=-14:TP=-1.5:LRA=11,alimiter=limit=0.89[a]" \
-  -map '[a]' mix.wav
+  -map '[a]' -t ${film_duration} mix.wav
 ffmpeg -i picture.mp4 -i mix.wav -filter_complex \
   "[1:a]apad,atrim=duration=${film_duration}[a]" \
-  -map 0:v -map '[a]' -c:v copy -c:a aac -b:a 192k final.mp4
+  -map 0:v -map '[a]' -c:v copy -c:a aac -b:a 192k -t ${film_duration} final.mp4
 ```
+
+Always cap each output with `-t`. `apad` is infinite, and in a longer chain a missing `atrim` can make ffmpeg write until the disk fills (in testing, a 45 GB file). AAC encoding raises true peak by up to about 1 dB, so mix about 1 dB under the delivery ceiling and measure the encoded file, not the WAV.
 
 Single-pass `loudnorm` can let sharp transients (ticks, hits) overshoot; the limiter at the end catches them. For a precise target, measure first (`loudnorm=print_format=json`), then apply the measured values in a second pass. Verify that the picture itself has the planned duration. Do not use `-shortest` to hide a short audio stream. A deliberately silent export can omit the audio stream altogether.
 
@@ -54,6 +56,8 @@ You probably cannot listen. So every claim about the mix ("the bed is flat", "ro
 - Use **momentary** loudness for events and the first seconds. Short-term reads about −120 LUFS until its 3-second window fills, which looks like silence when it is not.
 - Use **short-term** loudness for bed level and swells.
 - If you still cannot tell, say so and ask a person to listen once on headphones and once on a phone speaker.
+
+**Who can settle a listening finding.** A person who listened can settle it: record their words and how they listened (`--method 'user listened on headphones and phone speaker'`). A measurement can settle only the part it measures. For example, cross-correlating the delivered audio against the mix shows there is no doubled copy, but not how it sounds. Record the method plainly and record the subjective part as an accepted limit. Never resolve a listening finding on logs or on your own description of the mix.
 
 ## Integrity
 
